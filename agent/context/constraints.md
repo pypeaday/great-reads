@@ -1,63 +1,77 @@
 # Project Constraints
 
-<INSTRUCTION immutable>
-This document outlines the key constraints and limitations that all agents must consider during development.
+This document outlines the key limitations and requirements that must be considered during Python development.
 
 ## Technical Constraints
 
-1. **Simplicity**
-   - Minimize dependencies
-   - Prefer standard libraries over third-party packages
-   - Keep configuration minimal
+1. **Python Development**
+   - Use Python 3.9+ for all development
+   - Follow PEP 8 style guide strictly
+   - Implement type hints (PEP 484)
+   - Use standard library solutions when possible
+   - Keep third-party dependencies minimal
 
-2. **Portability**
-   - Must work across different operating systems
-   - No system-specific dependencies
-   - Platform-agnostic file paths
+2. **Development Tools**
+   - Use ruff for linting and formatting
+   - Manage dependencies with uv
+   - Use hatch for project management
+   - Configure mypy for type checking
+   - Use pytest for testing
 
-3. **Documentation**
-   - All files must be text-based (markdown preferred)
-   - No binary documentation formats
-   - Clear structure for AI parsing
+3. **Testing**
+   - Write purposeful pytest-based tests
+   - Focus on testing complex logic
+   - Use fixtures for test setup
+   - Mock external dependencies
+   - Ensure cross-platform compatibility
 
 ## Process Constraints
 
-1. **Agent Interaction**
-   - One tool use per interaction
-   - Explicit state management
-   - Clear progress tracking
+1. **Task Management**
+   - One task active at a time
+   - Document key decisions
+   - Track progress clearly
+   - Update pyproject.toml as needed
 
-2. **Memory Management**
-   - Append-only logs for progress
-   - Immutable core documentation
-   - Version-controlled decision history
+2. **Code Changes**
+   - Make incremental updates
+   - Run full test suite before commits
+   - Update type hints with changes
+   - Keep documentation in sync
+   - Run quality checks (ruff, mypy)
 
-3. **Context Boundaries**
-   - Clear separation of concerns
-   - Well-defined responsibility areas
-   - Explicit context switching
+3. **Tools**
+   - Use cross-platform compatible tools
+   - Support CLI operations
+   - Configure tools in pyproject.toml
+   - Use virtual environments
+   - Keep tool configurations minimal
 
-## Implementation Constraints
+## Implementation Guidelines
 
-1. **Code Structure**
-   - No unit tests unless requested
-   - Minimal boilerplate
-   - Clear file organization
+1. **Code**
+   - Follow "Explicit is better than implicit"
+   - Keep functions focused and pure
+   - Use type hints consistently
+   - Write clear docstrings
+   - Handle errors explicitly
 
-2. **Development Flow**
-   - Incremental changes
-   - Document-first approach
-   - Explicit validation steps
+2. **Documentation**
+   - Use Google-style docstrings
+   - Keep docstrings up to date
+   - Document exceptions
+   - Include usage examples
+   - Update README.md with changes
 
-3. **Tooling**
-   - CLI-first approach
-   - Standard development tools
-   - No specialized IDEs required
-</INSTRUCTION>
+3. **Package Management**
+   - Use `uv add` for adding requirements
+   - Keep production dependencies minimal
+   - Document all requirements
+   - Use appropriate dependency groups
 
-<LOG append>
-# Constraint Updates
+4. **Quality Standards**
+   - Meaningful test coverage
+   - Clear error messages
+   - Documented APIs
 
-Record any updates or clarifications to project constraints here:
-
-</LOG>
+Remember: Simple, explicit, and maintainable code over clever solutions.

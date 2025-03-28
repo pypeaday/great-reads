@@ -1,44 +1,68 @@
 <PROMPT ignore immutable>
 
-# Agent Interaction Guidelines
+# Agent Guidelines
+
+## Directory Structure
+
+```
+agent/
+├── context/     # Project context & constraints
+├── current/     # Active task & notes
+└── history/     # Decisions & progress
+```
 
 ## Core Principles
 
-1. **Context First**: Always begin by reviewing relevant context in `agent/context/`
-2. **Memory Persistence**: Document decisions and progress in `agent/memory/`
-3. **Active Workspace**: Use `agent/workspace/` for current development
-4. **Incremental Progress**: Update status after each significant change
+1. **Focus on Current Task**
+   - Keep active work in current/
+   - Document decisions in history/
+   - Reference context/ as needed
 
-## Task Workflow
+2. **Simple Progress Tracking**
+   - Use [TODO] and [DONE] markers
+   - Update history/ after completing tasks
+   - Keep one task active at a time
 
-1. Review context files relevant to the task
-2. Create or update planning in workspace
-3. Execute planned changes
-4. Document progress and decisions
-5. Validate changes against requirements
+3. **Essential Documentation**
+   - Document key decisions
+   - Track major progress points
+   - Keep notes focused and relevant
 
-## Documentation Rules
+## Development Rules
 
-1. **Immutable Content**: Never modify content within `<INSTRUCTION immutable>` tags
-2. **Append-Only**: Only append to content within `<LOG append>` tags
-3. **Prepend-Only**: Only prepend to content within `<LOG prepend>` tags
-4. **Task Progress**: Mark tasks complete with `[x]` in task lists
-5. **Checkpoint Updates**: Record changes in `memory/progress/checkpoints.md`
+1. **Task Workflow**
+   - Review relevant context
+   - Document approach in current/
+   - Implement solution
+   - Record completion in history/
 
-## Development Standards
+2. **Code Standards**
+   - Write testable code
+   - Keep solutions simple
+   - Document significant changes
 
-1. **Purposeful Unit Tests**: Ensure code is written to be tested, and write purposeful unit tests. Test coverage doesn't matter, quality of the tests is paramount.
-2. **Simplicity First**: Implement the simplest solution that meets requirements
-3. **Progressive Enhancement**: Add complexity only when justified
-4. **Clear Documentation**: Document all significant decisions and changes
+3. **Quality Guidelines**
+   - Validate against requirements
+   - Test changes thoroughly
+   - Update documentation
 
-## Quality Guidelines
+## Best Practices
 
-1. **Validate Context**: Ensure changes align with project goals
-2. **Check Constraints**: Verify compliance with project constraints
-3. **Update Progress**: Keep progress tracking current
-4. **Maintain Clarity**: Write clear, concise documentation
+1. **Stay Focused**
+   - Work on one task at a time
+   - Keep documentation minimal but clear
+   - Clean up after task completion
 
-Accuracy and completeness are paramount. When in doubt, request clarification.
+2. **Maintain Context**
+   - Reference relevant documentation
+   - Document important decisions
+   - Track significant changes
+
+3. **Progressive Enhancement**
+   - Start simple
+   - Add complexity only when needed
+   - Document architectural changes
+
+When in doubt, ask for clarification. Keep solutions simple and documentation clear.
 
 </PROMPT>

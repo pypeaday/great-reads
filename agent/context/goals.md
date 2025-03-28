@@ -1,34 +1,82 @@
 # Project Goals
 
-<INSTRUCTION immutable>
-This document defines the core objectives and success criteria for the project. All development decisions should align with these goals.
+This document outlines the key objectives and success criteria for Python development projects.
 
 ## Primary Objectives
 
-1. Create a template repository optimized for AI-human collaboration
-2. Establish clear patterns for agent-assisted development
-3. Maintain consistent context across development sessions
-4. Enable efficient knowledge transfer between sessions
+1. **Code Quality**
+   - Write idiomatic Python code
+   - Follow PEP standards consistently
+   - Maintain comprehensive type hints
+   - Keep code simple and explicit
+   - Optimize for readability
+
+2. **Maintainability**
+   - Write modular, testable code
+   - Use clear type annotations
+   - Maintain comprehensive documentation
+   - Follow consistent code structure
+   - Enable easy dependency updates
+
+3. **Development Efficiency**
+   - Leverage modern Python tools
+   - Automate routine tasks
+   - Enable fast dependency resolution
+   - Provide clear error messages
+   - Support rapid iteration
 
 ## Success Criteria
 
-1. Clear documentation structure that guides agent behavior
-2. Consistent patterns for recording decisions and progress
-3. Efficient context management for AI agents
-4. Minimal overhead for human developers
-5. Easy adaptation for different project types
+1. **Code Standards**
+   - Zero ruff violations
+   - Complete type hint coverage
+   - Passing mypy checks
+   - Documented public APIs
+   - Clear function signatures
 
-## Non-Goals
+2. **Testing Quality**
+   - Comprehensive pytest coverage
+   - Fast test execution
+   - Isolated test cases
+   - Clear test documentation
+   - Reliable CI/CD pipeline
 
-1. Implementing specific business logic
-2. Creating deployment configurations
-3. Setting up CI/CD pipelines
-4. Defining project-specific architecture
-</INSTRUCTION>
+3. **Developer Experience**
+   - Quick project setup
+   - Fast dependency installation
+   - Clear error messages
+   - Automated quality checks
+   - Streamlined workflows
 
-<LOG append>
-# Goal Updates
+## Technical Excellence
 
-Record any updates or clarifications to project goals here:
+1. **Performance**
+   - Efficient resource usage
+   - Fast startup times
+   - Optimized dependencies
+   - Minimal memory footprint
+   - Quick test execution
 
-</LOG>
+2. **Security**
+   - Regular dependency updates
+   - Security check automation
+   - Safe dependency handling
+   - Protected sensitive data
+   - Proper error handling
+
+3. **Scalability**
+   - Modular architecture
+   - Clear dependency boundaries
+   - Efficient resource usage
+   - Easy configuration
+   - Flexible deployment
+
+## Priorities
+
+1. Correct functionality
+2. Code quality and type safety
+3. Developer experience
+4. Performance optimization
+5. Advanced features
+
+Focus on writing clear, type-safe Python code that follows best practices and modern development standards.
