@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">
+            {% if is_new %}Add New Book{% else %}Edit Book{% endif %}
+        </h1>
+
+        <form method="POST" 
+              action="{% if is_new %}{{ url_for('create_book') }}{% else %}{{ url_for('update_book', book_id=book.id) }}{% endif %}"
+              class="bg-bg1 rounded-lg shadow-lg p-6">
+            {% if not is_new %}
+            <input type="hidden" name="_method" value="PUT">
+            {% endif %}
+
+            <!-- Title -->
+            <div class="mb-4">
+                <label for="title" class="block text-fg font-medium mb-2">Title</label>
+                <input type="text" 
+                       name="title" 
+                       id="title" 
+                       value="{{ book.title if book else '' }}"
+                       required
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+            </div>
+
+            <!-- Author -->
+            <div class="mb-4">
+                <label for="author" class="block text-fg font-medium mb-2">Author</label>
+                <input type="text" 
+                       name="author" 
+                       id="author" 
+                       value="{{ book.author if book else '' }}"
+                       required
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+            </div>
+
+            <!-- Status -->
+            <div class="mb-4">
+                <label for="status" class="block text-fg font-medium mb-2">Status</label>
+                <select name="status" 
+                        id="status" 
+                        required
+                        class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+                    {% for status in statuses %}
+                    <option value="{{ status }}" 
+                            {% if book and book.status.value == status %}selected{% endif %}>
+                        {{ status }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Rating -->
+            <div class="mb-4">
+                <label for="rating" class="block text-fg font-medium mb-2">Rating (0-3 stars)</label>
+                <select name="rating" 
+                        id="rating"
+                        class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+                    <option value="">No Rating</option>
+                    {% for i in range(4) %}
+                    <option value="{{ i }}" 
+                            {% if book and book.rating == i %}selected{% endif %}>
+                        {{ "★" * i }}{{ "☆" * (3 - i) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-6">
+                <label for="notes" class="block text-fg font-medium mb-2">Notes</label>
+                <textarea name="notes" 
+                          id="notes" 
+                          rows="4"
+                          class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">{{ book.notes if book else '' }}</textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-4">
+                <a href="{{ url_for('list_books') }}" 
+                   class="bg-bg2 hover:bg-opacity-80 text-fg px-4 py-2 rounded">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="bg-accent hover:bg-accent_hover text-fg px-4 py-2 rounded">
+                    {% if is_new %}Add Book{% else %}Save Changes{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

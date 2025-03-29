@@ -6,11 +6,21 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Boolean,
+    Enum as SQLEnum,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+import enum
 
 Base = declarative_base()
+
+
+class BookStatus(enum.Enum):
+    TO_READ = "To Read"
+    READING = "Currently Reading"
+    COMPLETED = "Completed"
+    ON_HOLD = "On Hold"
+    DNF = "Did Not Finish"
 
 
 class Role(Base):
@@ -41,18 +51,24 @@ class User(Base):
     )  # References role.name
 
     # Relationships
-    todos = relationship("Todo", back_populates="user")
+    books = relationship("Book", back_populates="user")
     role_info = relationship("Role", back_populates="users")
 
 
-class Todo(Base):
-    __tablename__ = "todos"
+class Book(Base):
+    __tablename__ = "books"
 
     id = Column(Integer, primary_key=True, index=True)
-    content = Column(String(500), nullable=False)
-    completed = Column(Boolean, default=False)
+    title = Column(String(255), nullable=False)
+    author = Column(String(255), nullable=False)
+    status = Column(SQLEnum(BookStatus), nullable=False, default=BookStatus.TO_READ)
+    notes = Column(Text)
+    start_date = Column(DateTime)
+    completion_date = Column(DateTime)
+    rating = Column(Integer)  # 0-3 rating system
     created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Relationships
-    user = relationship("User", back_populates="todos")
+    user = relationship("User", back_populates="books")

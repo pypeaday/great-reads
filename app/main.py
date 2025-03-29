@@ -18,6 +18,7 @@ from . import (
     auth_routes,
     roles,
     jinja_filters,
+    book_routes,
 )
 
 # Conditional imports based on features
@@ -28,13 +29,6 @@ try:
 except ImportError:
     ADMIN_ENABLED = False
 
-try:
-    from . import todo_routes
-
-    TODO_ENABLED = True
-except ImportError:
-    TODO_ENABLED = False
-
 from .auth import get_optional_current_user
 
 # Load environment variables
@@ -43,8 +37,23 @@ load_dotenv()
 app = FastAPI(title="Book Tracker")
 templates = Jinja2Templates(directory="app/templates")
 
+# Store templates in app state for access in routes
+app.state.templates = templates
+
 # Register custom Jinja2 filters
 jinja_filters.register_filters(templates)
+
+
+# Add middleware to handle HTMX PUT/DELETE requests
+@app.middleware("http")
+async def handle_htmx_methods(request: Request, call_next):
+    if request.method == "POST" and "hx-request" in request.headers:
+        # Only read form for HTMX requests
+        form = await request.form()
+        if "_method" in form and form["_method"] in ["PUT", "DELETE"]:
+            request.scope["method"] = form["_method"]
+    return await call_next(request)
+
 
 # Add CORS middleware
 app.add_middleware(
@@ -59,14 +68,20 @@ app.add_middleware(
 # Add middleware to extract token from cookies
 @app.middleware("http")
 async def cookie_to_authorization(request: Request, call_next):
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     # Extract token from cookie
     token = request.cookies.get("access_token")
+    logger.info(f"Cookie token: {token}")
 
     # Check if we have a token and no authorization header already exists
     has_auth_header = False
     for k, v in request.scope.get("headers", []):
         if k.decode().lower() == "authorization":
             has_auth_header = True
+            logger.info("Found existing auth header")
             break
 
     # Create a modified scope with the authorization header if token exists and no auth header
@@ -75,26 +90,32 @@ async def cookie_to_authorization(request: Request, call_next):
         headers = list(request.scope.get("headers", []))
 
         # Add the authorization header
-        auth_value = f"Bearer {token}"
+        # If token doesn't start with 'Bearer ', add it
+        if not token.startswith("Bearer "):
+            auth_value = f"Bearer {token}"
+        else:
+            auth_value = token
+        logger.info(f"Adding auth header: {auth_value}")
         headers.append((b"authorization", auth_value.encode()))
 
         # Update the scope headers
         request.scope["headers"] = headers
+        logger.info("Updated request headers with token")
 
     # Process the request and get the response
     response = await call_next(request)
+    logger.info(f"Response status code: {response.status_code}")
     return response
 
 
 # Include auth routes
 app.include_router(auth_routes.router)
 
-# Conditionally include feature routers
+# Include routers
 if ADMIN_ENABLED:
     app.include_router(admin_routes.router)
 
-if TODO_ENABLED:
-    app.include_router(todo_routes.router)
+app.include_router(book_routes.router)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -165,6 +186,7 @@ def init_db(db_session=None):
         print(f"Error initializing database: {e}")
         return False
 
+
 # Initialize database in production, but not in test environment
 if os.getenv("TESTING") != "true":
     init_db()
@@ -175,18 +197,19 @@ def home(request: Request, db: Session = Depends(database.get_db)):
     # Get current user from token cookie if available
     access_token = request.cookies.get("access_token")
     current_user = None
-    todos = []
+    books = []
 
     if access_token:
         # Token is stored without Bearer prefix
         try:
             current_user = auth.get_optional_current_user_sync(access_token, db)
-            if current_user and TODO_ENABLED:
-                # Get user's todos if authenticated and todos are enabled
-                todos = (
-                    db.query(models.Todo)
-                    .filter(models.Todo.user_id == current_user.id)
-                    .order_by(models.Todo.created_at.desc())
+            if current_user:
+                # Get user's recent books if authenticated
+                books = (
+                    db.query(models.Book)
+                    .filter(models.Book.user_id == current_user.id)
+                    .order_by(models.Book.updated_at.desc())
+                    .limit(5)
                     .all()
                 )
         except Exception as e:
@@ -200,11 +223,8 @@ def home(request: Request, db: Session = Depends(database.get_db)):
         "theme": theme,
         "current_theme": current_theme,
         "user": current_user,
+        "recent_books": books,
     }
-
-    # Add todos to context if the feature is enabled
-    if TODO_ENABLED:
-        context["todos"] = todos
 
     response = templates.TemplateResponse("index.html", context)
     set_theme_cookie(response, current_theme)

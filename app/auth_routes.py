@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, Body
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
+import logging
 
 from . import database, models, schemas, auth, themes
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -36,11 +40,12 @@ def set_theme_cookie(response: HTMLResponse, theme_name: str) -> None:
 
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    email: str = Form(...),
+    password: str = Form(...),
     db: Session = Depends(database.get_db),
 ):
     """API endpoint for obtaining a token."""
-    user = auth.authenticate_user(db, form_data.username, form_data.password)
+    user = auth.authenticate_user(db, email, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -142,17 +147,23 @@ async def login_page(request: Request):
 @router.post("/login", response_class=HTMLResponse)
 async def login(
     request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-    remember_me: Optional[str] = Form(None),
     db: Session = Depends(database.get_db),
 ):
     """Log in a user."""
+    form = await request.form()
+    email = form.get("email")
+    password = form.get("password")
+    remember_me = form.get("remember_me")
     theme, current_theme = get_current_theme(request)
+
+    logger.info(f"Login attempt - Email: {email}")
 
     # Authenticate user
     user = auth.authenticate_user(db, email, password)
+    logger.info(f"Authentication result: {'Success' if user else 'Failed'}")
+
     if not user:
+        logger.info("Authentication failed - returning error response")
         response = templates.TemplateResponse(
             "login.html",
             {
@@ -177,24 +188,30 @@ async def login(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
 
+    logger.info(f"Created access token for user: {user.email}")
+
     # Create success response with token cookie
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     # Set cookie max_age to match token expiration
     max_age = 30 * 24 * 60 * 60 if remember_me else 1800  # 30 days or 30 minutes
 
+    logger.info("Setting access_token cookie")
     response.set_cookie(
         key="access_token",
         value=access_token,  # Store just the token, middleware will add 'Bearer'
         httponly=True,
         max_age=max_age,
-        samesite="lax",
+        samesite="strict",  # More secure than lax
         secure=False,  # Set to True in production with HTTPS
+        domain="localhost",  # Ensure cookie is sent for all paths
+        path="/",  # Ensure cookie is sent for all paths
     )
     response.headers["HX-Trigger"] = (
         '{"showToast": {"message": "Login successful!", "type": "success"}}'
     )
     set_theme_cookie(response, current_theme)
+    logger.info("Login successful - returning redirect response")
     return response
 
 

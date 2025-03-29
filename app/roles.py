@@ -13,6 +13,9 @@ DEFAULT_ROLES = {
             "manage_roles": True,
             "view_system": True,
             "manage_system": True,
+            "view_all_books": True,
+            "manage_all_books": True,
+            "manage_own_books": True,
         },
     },
     "user": {
@@ -24,6 +27,9 @@ DEFAULT_ROLES = {
             "manage_roles": False,
             "view_system": False,
             "manage_system": False,
+            "view_all_books": False,
+            "manage_all_books": False,
+            "manage_own_books": True,
         },
     },
     "moderator": {
@@ -35,6 +41,9 @@ DEFAULT_ROLES = {
             "manage_roles": False,
             "view_system": True,
             "manage_system": False,
+            "view_all_books": True,
+            "manage_all_books": False,
+            "manage_own_books": True,
         },
     },
 }
@@ -62,13 +71,30 @@ def ensure_default_roles_exist(db: Session):
 
 def has_permission(user: models.User, permission: str) -> bool:
     """Check if a user has a specific permission."""
-    if not user or not user.role_info:
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    logger.info(
+        f"Checking permission '{permission}' for user {user.email if user else 'None'}"
+    )
+
+    if not user:
+        logger.info("No user provided")
+        return False
+
+    if not user.role_info:
+        logger.info(f"No role_info found for user {user.email}")
         return False
 
     try:
         permissions = json.loads(user.role_info.permissions)
-        return permissions.get(permission, False)
-    except (json.JSONDecodeError, AttributeError):
+        logger.info(f"Loaded permissions for role {user.role}: {permissions}")
+        has_perm = permissions.get(permission, False)
+        logger.info(f"Permission '{permission}' result: {has_perm}")
+        return has_perm
+    except (json.JSONDecodeError, AttributeError) as e:
+        logger.error(f"Error checking permissions: {e}")
         return False
 
 

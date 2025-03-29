@@ -5,8 +5,13 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import logging
 
 from . import models, database
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # JWT configuration
 import os
@@ -24,12 +29,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 def verify_password(plain_password, hashed_password):
     """Verify a password against a hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    logger.info("Verifying password")
+    result = pwd_context.verify(plain_password, hashed_password)
+    logger.info(f"Password verification result: {result}")
+    return result
 
 
 def get_password_hash(password):
@@ -39,13 +47,21 @@ def get_password_hash(password):
 
 def authenticate_user(db: Session, email: str, password: str):
     """Authenticate a user by email and password."""
+    logger.info(f"\nAuthentication attempt for email: {email}")
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
+        logger.info("User not found in database")
         return False
+    logger.info(
+        f"User found - ID: {user.id}, Role: {user.role}, Active: {user.is_active}"
+    )
     if not verify_password(password, user.hashed_password):
+        logger.info("Password verification failed")
         return False
     if not user.is_active:
+        logger.info("User is not active")
         return False
+    logger.info("Authentication successful")
     return user
 
 
@@ -191,9 +207,6 @@ def check_user_role(required_role: str):
     return check_role
 
 
-# Note: The async get_optional_current_user function defined above replaces this one
-
-
 def create_default_admin(db: Session):
     """
     Create the default administrator account.
@@ -218,11 +231,13 @@ def create_default_admin(db: Session):
         try:
             db.commit()
             db.refresh(admin)
-            print(f"Created default admin user: {admin_email}")
-            print("IMPORTANT: Please change the default admin password in production!")
+            logger.info(f"Created default admin user: {admin_email}")
+            logger.info(
+                "IMPORTANT: Please change the default admin password in production!"
+            )
         except Exception as e:
             db.rollback()
-            print(f"Error creating admin user: {e}")
+            logger.error(f"Error creating admin user: {e}")
             raise
     return admin
 

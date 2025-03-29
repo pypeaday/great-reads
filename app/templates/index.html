@@ -4,8 +4,8 @@
 <div class="max-w-4xl mx-auto">
     {% if not user %}
     <div class="mb-8 bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2 text-center">
-        <h2 class="text-xl font-bold text-theme-accent mb-4">Welcome to FastAPI + HTMX Starter!</h2>
-        <p class="text-theme-fg mb-4">A modern web application starter kit with FastAPI, HTMX, SQLite, and user authentication.</p>
+        <h2 class="text-xl font-bold text-theme-accent mb-4">Welcome to Book Tracker!</h2>
+        <p class="text-theme-fg mb-4">Track your reading journey, manage your book collection, and discover new books to read.</p>
         <div class="flex justify-center space-x-4">
             <a href="/login" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
                 <i class="fas fa-sign-in-alt mr-2"></i>Login
@@ -19,65 +19,61 @@
     <div class="mb-8">
         <h1 class="text-2xl font-bold mb-4">Welcome back, {{ user.email.split('@')[0] }}!</h1>
         
-        <!-- Todo List Example -->
+        <!-- Recent Books -->
         <div class="bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2">
-            <h2 class="text-xl font-bold mb-4">Todo List Example</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Recent Books</h2>
+                <a href="/books" class="text-theme-accent hover:opacity-90">
+                    View All Books <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
             
-            <!-- Add Todo Form -->
-            <form hx-post="/todos" 
-                  hx-target="#todo-list" 
-                  hx-swap="beforeend"
-                  class="flex gap-2 mb-6">
-                <input type="text" 
-                       name="content" 
-                       placeholder="Add a new todo..." 
-                       class="flex-1 px-4 py-2 rounded-md border focus:outline-none focus:ring-2"
-                       required>
-                <button type="submit" 
-                        class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
-                    Add
-                </button>
-            </form>
-
-            <!-- Todo List -->
-            <div id="todo-list" class="space-y-2">
-                {% for todo in todos %}
-                <div id="todo-{{ todo.id }}" class="flex items-center gap-2 p-2 bg-theme-bg rounded-md">
-                    <input type="checkbox" 
-                           {% if todo.completed %}checked{% endif %}
-                           hx-post="/todos/{{ todo.id }}/toggle"
-                           hx-target="#todo-{{ todo.id }}"
-                           hx-swap="outerHTML"
-                           class="form-checkbox">
-                    <span class="flex-1 {% if todo.completed %}line-through text-theme-fg1{% endif %}">
-                        {{ todo.content }}
-                    </span>
-                    <button hx-delete="/todos/{{ todo.id }}"
-                            hx-target="#todo-{{ todo.id }}"
-                            hx-swap="outerHTML"
-                            class="text-theme-error hover:opacity-80">
-                        <i class="fas fa-trash"></i>
-                    </button>
+            {% if recent_books %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for book in recent_books %}
+                <div class="bg-theme-bg rounded-lg p-4 border border-theme-bg2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-semibold">{{ book.title }}</h3>
+                            <p class="text-theme-fg1">{{ book.author }}</p>
+                        </div>
+                        <span class="text-sm bg-theme-bg2 px-2 py-1 rounded">
+                            {{ book.status.value }}
+                        </span>
+                    </div>
+                    {% if book.rating is not none %}
+                    <div class="mt-2 text-theme-accent">
+                        {{ "★" * book.rating }}{{ "☆" * (3 - book.rating) }}
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <div class="text-center py-8">
+                <p class="text-theme-fg1 mb-4">You haven't added any books yet.</p>
+                <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
+                    <i class="fas fa-plus mr-2"></i>Add Your First Book
+                </a>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Features Overview -->
         <div class="mt-8 bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2">
-            <h2 class="text-xl font-bold mb-4">About This Starter Kit</h2>
+            <h2 class="text-xl font-bold mb-4">Book Tracker Features</h2>
             <div class="space-y-4 text-theme-fg">
-                <p>This starter kit provides a solid foundation for building modern web applications with:</p>
+                <p>Track your reading journey with these powerful features:</p>
                 <ul class="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>FastAPI</strong> - Modern Python web framework with automatic OpenAPI docs</li>
-                    <li><strong>HTMX</strong> - Power of modern browser features with simple HTML attributes</li>
-                    <li><strong>SQLite + SQLAlchemy</strong> - Robust database with powerful ORM</li>
-                    <li><strong>Alembic Migrations</strong> - Database version control and schema management</li>
-                    <li><strong>JWT Authentication</strong> - Secure user authentication with refresh tokens</li>
-                    <li><strong>Theme System</strong> - Dynamic theme switching with cookie persistence</li>
-                    <li><strong>Tailwind CSS</strong> - Utility-first CSS framework for rapid UI development</li>
+                    <li><strong>Reading Status</strong> - Track books as To Read, Reading, Completed, On Hold, or DNF</li>
+                    <li><strong>Book Management</strong> - Add, edit, and organize your book collection</li>
+                    <li><strong>Reading Progress</strong> - Track start and completion dates</li>
+                    <li><strong>Rating System</strong> - Rate books on a 0-3 star scale</li>
+                    <li><strong>Notes & Thoughts</strong> - Add personal notes and reflections for each book</li>
+                    <li><strong>Theme System</strong> - Customize your reading environment with multiple themes</li>
+                    <li><strong>Mobile Friendly</strong> - Access your books on any device</li>
                 </ul>
-                <p class="text-theme-fg1 text-sm mt-4">The todo list above demonstrates these features working together in a real-world example.</p>
+                <p class="text-theme-fg1 text-sm mt-4">Start tracking your reading journey today!</p>
             </div>
         </div>
     </div>
