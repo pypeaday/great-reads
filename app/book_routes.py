@@ -1,16 +1,15 @@
 """Book management routes for the book tracking app."""
 
 from datetime import datetime
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi import status as http_status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
-from . import models, auth, roles
+from . import auth, models, roles
 from .database import get_db
-from .schemas import Book, BookCreate, BookUpdate
 from .roles import requires_permission
 
 router = APIRouter(
@@ -25,14 +24,15 @@ def get_templates(request: Request):
     return request.app.state.templates
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse, response_model=None)
 async def list_books(
     request: Request,
-    status_filter: Optional[str] = None,
+    status_filter: str | None = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """List all books for the current user."""
+
     query = db.query(models.Book)
 
     # Filter by user unless they have permission to view all books
@@ -45,7 +45,9 @@ async def list_books(
             book_status = models.BookStatus[status_filter]
             query = query.filter(models.Book.status == book_status)
         except KeyError:
-            raise HTTPException(status_code=400, detail="Invalid status filter")
+            raise HTTPException(
+                status_code=400, detail="Invalid status filter"
+            ) from None
 
     books = query.order_by(desc(models.Book.created_at)).all()
 
@@ -57,12 +59,12 @@ async def list_books(
             "current_user": current_user,
             "books": books,
             "status_filter": status_filter,
-            "statuses": [status for status in models.BookStatus],
+            "statuses": list(models.BookStatus),
         },
     )
 
 
-@router.get("/new", response_class=HTMLResponse)
+@router.get("/new", response_class=HTMLResponse, response_model=None)
 @requires_permission("manage_own_books")
 async def new_book_form(
     request: Request,
@@ -70,6 +72,11 @@ async def new_book_form(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Show form to create a new book."""
+    if db is None:
+        db = get_db()
+    if current_user is None:
+        current_user = auth.get_current_active_user()
+
     templates = get_templates(request)
     return templates.TemplateResponse(
         "books/form.html",
@@ -77,30 +84,31 @@ async def new_book_form(
             "request": request,
             "current_user": current_user,
             "book": None,
-            "statuses": [status for status in models.BookStatus],
+            "statuses": list(models.BookStatus),
             "is_new": True,
         },
     )
 
 
-@router.post("/")
+@router.post("/", response_model=None)
 @requires_permission("manage_own_books")
 async def create_book(
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
     title: str = Form(...),
     author: str = Form(...),
     status: str = Form(...),
-    notes: Optional[str] = Form(None),
-    rating: Optional[str] = Form(None),
+    notes: str | None = Form(None),
+    rating: str | None = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Create a new book."""
+
     # Validate status
     try:
         book_status = models.BookStatus[status.upper()]
     except KeyError:
-        raise HTTPException(status_code=400, detail="Invalid status")
+        raise HTTPException(status_code=400, detail="Invalid status") from None
 
     # Handle rating
     parsed_rating = None
@@ -113,10 +121,9 @@ async def create_book(
                 )
         except ValueError:
             raise HTTPException(
-                status_code=400, detail="Rating must be a valid integer between 0 and 3"
-            )
-
-    # Create book
+                status_code=400,
+                detail="Rating must be a valid integer between 0 and 3"
+            ) from None
     now = datetime.utcnow()
     book = models.Book(
         title=title,
@@ -140,7 +147,7 @@ async def create_book(
     )
 
 
-@router.get("/{book_id}/edit", response_class=HTMLResponse)
+@router.get("/{book_id}/edit", response_class=HTMLResponse, response_model=None)
 @requires_permission("manage_own_books")
 async def edit_book_form(
     request: Request,
@@ -149,12 +156,13 @@ async def edit_book_form(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Show form to edit a book."""
+
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
     # Check if user has permission to edit this book
-    if book.user_id != current_user.id and not auth.has_permission(
+    if book.user_id != current_user.id and not roles.has_permission(
         current_user, "manage_all_books"
     ):
         raise HTTPException(status_code=403, detail="Not authorized to edit this book")
@@ -166,32 +174,33 @@ async def edit_book_form(
             "request": request,
             "current_user": current_user,
             "book": book,
-            "statuses": [status for status in models.BookStatus],
+            "statuses": list(models.BookStatus),
             "is_new": False,
         },
     )
 
 
-@router.put("/{book_id}")
+@router.put("/{book_id}", response_model=None)
 @requires_permission("manage_own_books")
 async def update_book(
     request: Request,
     book_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_active_user),
     title: str = Form(...),
     author: str = Form(...),
     status: str = Form(...),
-    notes: Optional[str] = Form(None),
-    rating: Optional[str] = Form(None),
+    notes: str | None = Form(None),
+    rating: str | None = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Update a book's information."""
+
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
     # Check if user has permission to edit this book
-    if book.user_id != current_user.id and not auth.has_permission(
+    if book.user_id != current_user.id and not roles.has_permission(
         current_user, "manage_all_books"
     ):
         raise HTTPException(status_code=403, detail="Not authorized to edit this book")
@@ -200,7 +209,7 @@ async def update_book(
     try:
         new_status = models.BookStatus[status.upper()]
     except KeyError:
-        raise HTTPException(status_code=400, detail="Invalid status")
+        raise HTTPException(status_code=400, detail="Invalid status") from None
 
     # Handle rating
     parsed_rating = None
@@ -213,8 +222,9 @@ async def update_book(
                 )
         except ValueError:
             raise HTTPException(
-                status_code=400, detail="Rating must be a valid integer between 0 and 3"
-            )
+                status_code=400,
+                detail="Rating must be a valid integer between 0 and 3"
+            ) from None
 
     # Update start_date if status changes to READING
     if (
@@ -245,7 +255,7 @@ async def update_book(
     )
 
 
-@router.delete("/{book_id}")
+@router.delete("/{book_id}", response_model=None)
 @requires_permission("manage_own_books")
 async def delete_book(
     request: Request,
@@ -259,7 +269,7 @@ async def delete_book(
         raise HTTPException(status_code=404, detail="Book not found")
 
     # Check if user has permission to delete this book
-    if book.user_id != current_user.id and not auth.has_permission(
+    if book.user_id != current_user.id and not roles.has_permission(
         current_user, "manage_all_books"
     ):
         raise HTTPException(
@@ -270,3 +280,88 @@ async def delete_book(
     db.commit()
 
     return {"success": True}
+
+
+@router.put("/{book_id}/inline-update", response_model=None)
+@requires_permission("manage_own_books")
+async def inline_update_book(
+    request: Request,
+    book_id: int,
+    update_type: str = Form(...),
+    notes: str | None = Form(None),
+    status: str | None = Form(None),
+    rating: str | None = Form(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    """Update a specific field of a book via inline editing."""
+    # Get the book
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Check if user has permission to edit this book
+    if book.user_id != current_user.id and not roles.has_permission(
+        current_user, "manage_all_books"
+    ):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this book")
+
+    # Update based on the update type
+    if update_type == "notes" and notes is not None:
+        book.notes = notes
+    elif update_type == "status" and status is not None:
+        try:
+            new_status = models.BookStatus[status.upper()]
+
+            # Handle date updates based on status change
+            now = datetime.utcnow()
+
+            # If changing to READING and no start date, set it
+            if new_status == models.BookStatus.READING and not book.start_date:
+                book.start_date = now
+
+            # If changing to COMPLETED and no completion date, set it
+            if new_status == models.BookStatus.COMPLETED and not book.completion_date:
+                book.completion_date = now
+
+            book.status = new_status
+        except KeyError:
+            raise HTTPException(status_code=400, detail="Invalid status") from None
+    elif update_type == "rating" and rating is not None:
+        # Handle rating
+        if rating == "null":
+            book.rating = None
+        else:
+            try:
+                parsed_rating = int(rating)
+                if not 0 <= parsed_rating <= 3:
+                    raise HTTPException(
+                        status_code=400, detail="Rating must be between 0 and 3"
+                    )
+                book.rating = parsed_rating
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Rating must be a valid integer between 0 and 3"
+                ) from None
+    else:
+        raise HTTPException(
+            status_code=400, detail="Invalid update type or missing data"
+        )
+
+    # Update the timestamp
+    book.updated_at = datetime.utcnow()
+    db.commit()
+
+    # Get all books for the current status to render the updated book in context
+    templates = get_templates(request)
+    # Return just the updated book HTML
+    return templates.TemplateResponse(
+        "books/book_card.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "book": book,
+            "statuses": list(models.BookStatus),
+        },
+    )

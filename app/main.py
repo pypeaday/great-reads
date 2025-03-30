@@ -301,12 +301,32 @@ def update_theme(
     response = HTMLResponse(
         content=f"""
         <script>
+            // Update theme in DOM
             document.documentElement.dataset.theme = "{theme_name}";
+            
+            // Store theme in localStorage for persistence across page reloads
+            localStorage.setItem('theme', "{theme_name}");
+            
+            // Apply theme colors
+            fetch('/api/theme/{theme_name}')
+                .then(response => response.json())
+                .then(colors => {{
+                    const root = document.documentElement;
+                    Object.entries(colors).forEach(([key, value]) => {{
+                        root.style.setProperty(`--theme-${{key}}`, value);
+                    }});
+                    console.log('Theme applied successfully');
+                }})
+                .catch(error => console.error('Error applying theme:', error));
+                
+            // Notify any listeners
             window.dispatchEvent(new Event('themeChanged'));
         </script>
         """,
         status_code=200,
     )
+    
+    # Set theme cookie with long expiration
     set_theme_cookie(response, theme_name)
 
     # Add HTMX headers for client-side updates

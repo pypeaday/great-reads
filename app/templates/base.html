@@ -25,6 +25,9 @@
                 // Update data-theme attribute
                 root.dataset.theme = themeName;
                 
+                // Store the theme in localStorage for persistence
+                localStorage.setItem('theme', themeName);
+                
                 console.log(`Theme applied: ${themeName}`);
             } catch (error) {
                 console.error('Error applying theme:', error);
@@ -33,7 +36,7 @@
 
         // Handle theme changes from settings page
         htmx.on('htmx:afterRequest', (evt) => {
-            if (evt.detail.pathInfo.requestPath === '/settings/theme') {
+            if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath === '/settings/theme') {
                 const themeName = evt.detail.requestConfig.parameters.theme_name;
                 applyThemeColors(themeName);
             }
@@ -46,31 +49,28 @@
             if (parts.length === 2) return parts.pop().split(';').shift();
         };
 
-        // Apply theme immediately
-        (() => {
-            const theme = getCookie('theme') || '{{ current_theme }}';
+        // Apply theme on page load - prioritize localStorage over cookies
+        document.addEventListener('DOMContentLoaded', () => {
+            // First check localStorage (most reliable)
+            const localTheme = localStorage.getItem('theme');
+            // Then check cookie
+            const cookieTheme = getCookie('theme');
+            // Then fall back to server-provided theme
+            const serverTheme = '{{ current_theme }}';
+            
+            // Use the first available theme source
+            const theme = localTheme || cookieTheme || serverTheme;
+            
+            // Apply the theme
             document.documentElement.dataset.theme = theme;
             applyThemeColors(theme);
-        })();
-
-        // Handle theme changes
-        window.addEventListener('themeChanged', () => {
-            const theme = getCookie('theme');
-            if (theme) {
-                document.documentElement.dataset.theme = theme;
-                applyThemeColors(theme).catch(console.error);
-            }
         });
-
-        // Ensure theme persists across page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                const theme = getCookie('theme') || document.documentElement.dataset.theme;
-                if (theme) {
-                    applyThemeColors(theme).catch(console.error);
-                }
-            });
-        }
+        
+        // For immediate application before DOMContentLoaded
+        (() => {
+            const theme = localStorage.getItem('theme') || getCookie('theme') || '{{ current_theme }}';
+            document.documentElement.dataset.theme = theme;
+        })();
 
         // Configure Tailwind theme
         tailwind.config = {

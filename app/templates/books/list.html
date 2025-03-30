@@ -3,8 +3,8 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">My Books</h1>
-        <a href="{{ url_for('new_book_form') }}" class="bg-accent hover:bg-accent_hover text-fg px-4 py-2 rounded">
+        <h1 class="text-2xl font-bold text-text1">My Books</h1>
+        <a href="{{ url_for('new_book_form') }}" class="bg-accent1 hover:bg-accent2 text-white px-4 py-2 rounded transition-colors">
             Add Book
         </a>
     </div>
@@ -12,72 +12,33 @@
     <!-- Status Filter -->
     <div class="mb-6">
         <form hx-get="/books" hx-push-url="true" class="flex gap-4">
-            <select name="status_filter" class="bg-bg1 text-fg border border-bg2 rounded px-3 py-2">
+            <select name="status_filter" class="bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
                 <option value="">All Statuses</option>
                 {% for status in statuses %}
                 <option value="{{ status.name }}" {% if status_filter == status.name %}selected{% endif %}>
-                    {{ status.value }}
+                    {{ status.name|replace('_', ' ')|title }}
                 </option>
                 {% endfor %}
             </select>
-            <button type="submit" class="bg-accent hover:bg-accent_hover text-fg px-4 py-2 rounded">
+            <button type="submit" class="bg-accent1 hover:bg-accent2 text-white px-4 py-2 rounded transition-colors">
                 Filter
             </button>
         </form>
     </div>
 
     <!-- Books Dashboard -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {% for status in statuses %}
         <div class="bg-bg1 rounded-lg shadow-lg p-4">
-            <h2 class="text-lg font-semibold mb-4 text-center text-fg">{{ status.value }}</h2>
+            <h2 class="text-lg font-semibold mb-4 text-center text-text1">{{ status.name|replace('_', ' ')|title }}</h2>
             <div class="space-y-4">
                 {% set status_books = books|selectattr("status", "equalto", status)|list %}
                 {% if status_books %}
                     {% for book in status_books %}
-                    <div class="bg-bg2 rounded-lg p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 class="font-semibold text-fg">{{ book.title }}</h3>
-                                <p class="text-sm text-fg1">{{ book.author }}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <a href="{{ url_for('edit_book_form', book_id=book.id) }}"
-                                    class="text-accent hover:text-accent_hover">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                    </svg>
-                                </a>
-                                <button onclick="deleteBook('{{ book.id }}')" class="text-error hover:text-opacity-80">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        {% if book.rating is not none %}
-                        <div class="text-sm text-fg1 mb-2">
-                            Rating: {{ "★" * book.rating }}{{ "☆" * (3 - book.rating) }}
-                        </div>
-                        {% endif %}
-
-                        {% if book.notes %}
-                        <p class="text-sm text-fg1 mb-2 line-clamp-2">{{ book.notes }}</p>
-                        {% endif %}
-
-                        <div class="text-xs text-fg1">
-                            {% if book.start_date %}
-                            <p>Started: {{ book.start_date.strftime('%Y-%m-%d') }}</p>
-                            {% endif %}
-                            {% if book.completion_date %}
-                            <p>Completed: {{ book.completion_date.strftime('%Y-%m-%d') }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
+                        {% include "books/book_card.html" %}
                     {% endfor %}
                 {% else %}
-                    <div class="text-center text-fg1 py-4 text-sm">
+                    <div class="text-center text-text2 py-4 text-sm bg-bg2 rounded-lg">
                         No books in this category
                     </div>
                 {% endif %}
@@ -104,5 +65,211 @@
             });
         }
     }
+    
+    function toggleEditMode(bookId, section = null) {
+        const bookCard = document.getElementById(`book-${bookId}`);
+        
+        if (section) {
+            // Toggle specific section only
+            const viewElement = document.getElementById(`${section}-view-${bookId}`);
+            const editElement = document.getElementById(`${section}-edit-${bookId}`);
+            
+            if (viewElement && editElement) {
+                if (editElement.classList.contains('hidden')) {
+                    // Switch to edit mode for this section
+                    viewElement.classList.add('hidden');
+                    editElement.classList.remove('hidden');
+                    
+                    // Focus on the first input/select/textarea
+                    const input = editElement.querySelector('input, select, textarea');
+                    if (input) input.focus();
+                } else {
+                    // Switch back to view mode
+                    editElement.classList.add('hidden');
+                    viewElement.classList.remove('hidden');
+                }
+            }
+        } else {
+            // Toggle all sections
+            const viewElements = bookCard.querySelectorAll('.view-mode');
+            const editElements = bookCard.querySelectorAll('.edit-mode');
+            
+            // Check if we're currently in edit mode
+            const isInEditMode = Array.from(editElements).some(el => !el.classList.contains('hidden'));
+            
+            if (isInEditMode) {
+                // Switch all to view mode
+                editElements.forEach(el => el.classList.add('hidden'));
+                viewElements.forEach(el => el.classList.remove('hidden'));
+            } else {
+                // Show status edit by default when clicking the main edit button
+                const statusEdit = document.getElementById(`status-edit-${bookId}`);
+                const statusView = document.getElementById(`status-view-${bookId}`);
+                
+                if (statusEdit && statusView) {
+                    statusView?.classList.add('hidden');
+                    statusEdit.classList.remove('hidden');
+                    
+                    // Focus on the select
+                    const select = statusEdit.querySelector('select');
+                    if (select) select.focus();
+                } else {
+                    // If no status edit, show notes edit
+                    const notesEdit = document.getElementById(`notes-edit-${bookId}`);
+                    const notesView = document.getElementById(`notes-view-${bookId}`);
+                    
+                    if (notesEdit && notesView) {
+                        notesView.classList.add('hidden');
+                        notesEdit.classList.remove('hidden');
+                        
+                        // Focus on the textarea
+                        const textarea = notesEdit.querySelector('textarea');
+                        if (textarea) textarea.focus();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Add keyboard shortcuts for saving forms
+    document.addEventListener('keydown', function(e) {
+        // Check if we're in a form within an edit mode element
+        const activeElement = document.activeElement;
+        const editModeParent = activeElement.closest('.edit-mode');
+        
+        if (editModeParent && !editModeParent.classList.contains('hidden')) {
+            // If Enter key is pressed and not in a textarea (or in textarea with Ctrl/Cmd)
+            if (e.key === 'Enter' && (activeElement.tagName !== 'TEXTAREA' || e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                const form = activeElement.closest('form');
+                if (form) form.submit();
+            }
+            
+            // If Escape key is pressed
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                // Find the book ID from the parent element ID
+                const bookIdMatch = editModeParent.id.match(/([a-z]+)-edit-(\d+)/);
+                if (bookIdMatch && bookIdMatch.length >= 3) {
+                    const section = bookIdMatch[1];
+                    const bookId = bookIdMatch[2];
+                    toggleEditMode(bookId, section);
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+<script>
+    function deleteBook(bookId) {
+        if (confirm('Are you sure you want to delete this book?')) {
+            fetch(`/books/${bookId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error deleting book');
+                }
+            });
+        }
+    }
+    
+    function toggleEditMode(bookId, section = null) {
+        const bookCard = document.getElementById(`book-${bookId}`);
+        
+        if (section) {
+            // Toggle specific section only
+            const viewElement = document.getElementById(`${section}-view-${bookId}`);
+            const editElement = document.getElementById(`${section}-edit-${bookId}`);
+            
+            if (viewElement && editElement) {
+                if (editElement.classList.contains('hidden')) {
+                    // Switch to edit mode for this section
+                    viewElement.classList.add('hidden');
+                    editElement.classList.remove('hidden');
+                    
+                    // Focus on the first input/select/textarea
+                    const input = editElement.querySelector('input, select, textarea');
+                    if (input) input.focus();
+                } else {
+                    // Switch back to view mode
+                    editElement.classList.add('hidden');
+                    viewElement.classList.remove('hidden');
+                }
+            }
+        } else {
+            // Toggle all sections
+            const viewElements = bookCard.querySelectorAll('.view-mode');
+            const editElements = bookCard.querySelectorAll('.edit-mode');
+            
+            // Check if we're currently in edit mode
+            const isInEditMode = Array.from(editElements).some(el => !el.classList.contains('hidden'));
+            
+            if (isInEditMode) {
+                // Switch all to view mode
+                editElements.forEach(el => el.classList.add('hidden'));
+                viewElements.forEach(el => el.classList.remove('hidden'));
+            } else {
+                // Show status edit by default when clicking the main edit button
+                const statusEdit = document.getElementById(`status-edit-${bookId}`);
+                const statusView = document.getElementById(`status-view-${bookId}`);
+                
+                if (statusEdit && statusView) {
+                    statusView?.classList.add('hidden');
+                    statusEdit.classList.remove('hidden');
+                    
+                    // Focus on the select
+                    const select = statusEdit.querySelector('select');
+                    if (select) select.focus();
+                } else {
+                    // If no status edit, show notes edit
+                    const notesEdit = document.getElementById(`notes-edit-${bookId}`);
+                    const notesView = document.getElementById(`notes-view-${bookId}`);
+                    
+                    if (notesEdit && notesView) {
+                        notesView.classList.add('hidden');
+                        notesEdit.classList.remove('hidden');
+                        
+                        // Focus on the textarea
+                        const textarea = notesEdit.querySelector('textarea');
+                        if (textarea) textarea.focus();
+                    }
+                }
+            }
+        }
+    }
+    
+    // Add keyboard shortcuts for saving forms
+    document.addEventListener('keydown', function(e) {
+        // Check if we're in a form within an edit mode element
+        const activeElement = document.activeElement;
+        const editModeParent = activeElement.closest('.edit-mode');
+        
+        if (editModeParent && !editModeParent.classList.contains('hidden')) {
+            // If Enter key is pressed and not in a textarea (or in textarea with Ctrl/Cmd)
+            if (e.key === 'Enter' && (activeElement.tagName !== 'TEXTAREA' || e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                const form = activeElement.closest('form');
+                if (form) form.submit();
+            }
+            
+            // If Escape key is pressed
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                // Find the book ID from the parent element ID
+                const bookIdMatch = editModeParent.id.match(/([a-z]+)-edit-(\d+)/);
+                if (bookIdMatch && bookIdMatch.length >= 3) {
+                    const section = bookIdMatch[1];
+                    const bookId = bookIdMatch[2];
+                    toggleEditMode(bookId, section);
+                }
+            }
+        }
+    });
 </script>
 {% endblock %}
