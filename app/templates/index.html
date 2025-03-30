@@ -3,79 +3,115 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     {% if not user %}
-    <div class="mb-8 bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2 text-center">
-        <h2 class="text-xl font-bold text-theme-accent mb-4">Welcome to Book Tracker!</h2>
-        <p class="text-theme-fg mb-4">Track your reading journey, manage your book collection, and discover new books to read.</p>
-        <div class="flex justify-center space-x-4">
-            <a href="/login" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
-                <i class="fas fa-sign-in-alt mr-2"></i>Login
-            </a>
-            <a href="/register" class="px-4 py-2 bg-theme-bg2 text-theme-fg rounded-md hover:bg-theme-bg border border-theme-bg2 transition-colors">
-                <i class="fas fa-user-plus mr-2"></i>Register
-            </a>
-        </div>
+    <div class="flex justify-center space-x-4">
+        <a href="/login" class="px-6 py-3 bg-theme-accent text-white rounded-lg hover:opacity-90 transition-opacity text-lg">
+            <i class="fas fa-sign-in-alt mr-2"></i>Login
+        </a>
+        <a href="/register" class="px-6 py-3 bg-theme-bg2 text-theme-fg rounded-lg hover:bg-theme-bg border border-theme-bg2 transition-colors text-lg">
+            <i class="fas fa-user-plus mr-2"></i>Register
+        </a>
     </div>
     {% else %}
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold mb-4">Welcome back, {{ user.email.split('@')[0] }}!</h1>
+    <div class="mb-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">{{ user.email.split('@')[0] }}'s Reading Dashboard</h1>
+            <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
+                <i class="fas fa-plus mr-2"></i>Add Book
+            </a>
+        </div>
         
-        <!-- Recent Books -->
-        <div class="bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Recent Books</h2>
-                <a href="/books" class="text-theme-accent hover:opacity-90">
-                    View All Books <i class="fas fa-arrow-right ml-1"></i>
-                </a>
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {% for status in book_statuses %}
+            {% set count = books_by_status.get(status, [])|length %}
+            <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2 text-center">
+                <div class="text-2xl font-bold mb-1">{{ count }}</div>
+                <div class="text-sm text-theme-fg1">{{ status.value }}</div>
             </div>
-            
-            {% if recent_books %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% for book in recent_books %}
-                <div class="bg-theme-bg rounded-lg p-4 border border-theme-bg2">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-semibold">{{ book.title }}</h3>
-                            <p class="text-theme-fg1">{{ book.author }}</p>
-                        </div>
-                        <span class="text-sm bg-theme-bg2 px-2 py-1 rounded">
-                            {{ book.status.value }}
-                        </span>
-                    </div>
-                    {% if book.rating is not none %}
-                    <div class="mt-2 text-theme-accent">
-                        {{ "★" * book.rating }}{{ "☆" * (3 - book.rating) }}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-8">
-                <p class="text-theme-fg1 mb-4">You haven't added any books yet.</p>
-                <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
-                    <i class="fas fa-plus mr-2"></i>Add Your First Book
-                </a>
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
 
-        <!-- Features Overview -->
-        <div class="mt-8 bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2">
-            <h2 class="text-xl font-bold mb-4">Book Tracker Features</h2>
-            <div class="space-y-4 text-theme-fg">
-                <p>Track your reading journey with these powerful features:</p>
-                <ul class="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>Reading Status</strong> - Track books as To Read, Reading, Completed, On Hold, or DNF</li>
-                    <li><strong>Book Management</strong> - Add, edit, and organize your book collection</li>
-                    <li><strong>Reading Progress</strong> - Track start and completion dates</li>
-                    <li><strong>Rating System</strong> - Rate books on a 0-3 star scale</li>
-                    <li><strong>Notes & Thoughts</strong> - Add personal notes and reflections for each book</li>
-                    <li><strong>Theme System</strong> - Customize your reading environment with multiple themes</li>
-                    <li><strong>Mobile Friendly</strong> - Access your books on any device</li>
-                </ul>
-                <p class="text-theme-fg1 text-sm mt-4">Start tracking your reading journey today!</p>
+        <!-- Book Dashboard -->
+        {% if books_by_status %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for status in book_statuses %}
+            {% if status in books_by_status %}
+            <div class="bg-theme-bg1 rounded-lg shadow-lg border border-theme-bg2">
+                <div class="p-4 border-b border-theme-bg2">
+                    <button class="w-full flex justify-between items-center text-left"
+                            onclick="toggleSection('{{ status.name }}')"
+                            aria-expanded="true"
+                            aria-controls="section-{{ status.name }}">
+                        <div class="flex items-center">
+                            <h2 class="text-xl font-bold">{{ status.value }}</h2>
+                            <span class="ml-3 px-2 py-1 bg-theme-bg2 rounded-full text-sm">
+                                {{ books_by_status[status]|length }}
+                            </span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform" id="icon-{{ status.name }}"></i>
+                    </button>
+                </div>
+                
+                <div id="section-{{ status.name }}" class="max-h-[400px] overflow-y-auto">
+                    <div class="divide-y divide-theme-bg2">
+                        {% for book in books_by_status[status] %}
+                        <div class="p-4 hover:bg-theme-bg2/50 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-semibold">{{ book.title }}</h3>
+                                    <p class="text-theme-fg1">{{ book.author }}</p>
+                                </div>
+                                {% if book.rating is not none %}
+                                <div class="text-theme-accent">
+                                    {{ "★" * book.rating }}{{ "☆" * (3 - book.rating) }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if book.start_date and status.value == "Currently Reading" %}
+                            <div class="mt-2 text-sm text-theme-fg1">
+                                Started: {{ book.start_date.strftime('%Y-%m-%d') }}
+                            </div>
+                            {% endif %}
+                            {% if book.completion_date and status.value == "Completed" %}
+                            <div class="mt-2 text-sm text-theme-fg1">
+                                Finished: {{ book.completion_date.strftime('%Y-%m-%d') }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
+            {% endif %}
+            {% endfor %}
         </div>
+
+        <script>
+            function toggleSection(sectionId) {
+                const section = document.getElementById('section-' + sectionId);
+                const icon = document.getElementById('icon-' + sectionId);
+                const button = icon.parentElement;
+                
+                if (section.style.display === 'none') {
+                    section.style.display = 'block';
+                    icon.style.transform = 'rotate(0deg)';
+                    button.setAttribute('aria-expanded', 'true');
+                } else {
+                    section.style.display = 'none';
+                    icon.style.transform = 'rotate(-90deg)';
+                    button.setAttribute('aria-expanded', 'false');
+                }
+            }
+        </script>
+        {% else %}
+        <div class="bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2 text-center">
+            <p class="text-theme-fg1 mb-4">You haven't added any books yet.</p>
+            <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
+                <i class="fas fa-plus mr-2"></i>Add Your First Book
+            </a>
+        </div>
+        {% endif %}
+
     </div>
     {% endif %}
 </div>

@@ -215,19 +215,25 @@ def home(request: Request, db: Session = Depends(database.get_db)):
     current_user = None
     books = []
 
+    books_by_status = {}
     if access_token:
         # Token is stored without Bearer prefix
         try:
             current_user = auth.get_optional_current_user_sync(access_token, db)
             if current_user:
-                # Get user's recent books if authenticated
+                # Get all user's books grouped by status
                 books = (
                     db.query(models.Book)
                     .filter(models.Book.user_id == current_user.id)
                     .order_by(models.Book.updated_at.desc())
-                    .limit(5)
                     .all()
                 )
+
+                # Group books by status
+                for status in models.BookStatus:
+                    status_books = [b for b in books if b.status == status]
+                    if status_books:
+                        books_by_status[status] = status_books
         except Exception as e:
             # Invalid token, ignore and proceed as anonymous user
             print(f"Authentication error: {e}")
@@ -239,7 +245,8 @@ def home(request: Request, db: Session = Depends(database.get_db)):
         "theme": theme,
         "current_theme": current_theme,
         "user": current_user,
-        "recent_books": books,
+        "books_by_status": books_by_status,
+        "book_statuses": list(models.BookStatus),
     }
 
     response = templates.TemplateResponse("index.html", context)
