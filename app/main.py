@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
 import os
+import json
 from dotenv import load_dotenv
 
 # Base imports
@@ -255,7 +256,11 @@ def home(request: Request, db: Session = Depends(database.get_db)):
 
 
 @app.get("/settings")
-def settings_page(request: Request):
+def settings_page(
+    request: Request,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_optional_current_user),
+):
     theme, current_theme = get_current_theme(request)
     # Create a dict of theme names and their colors
     theme_previews = {name: colors for name, colors in themes.THEMES.items()}
@@ -266,6 +271,7 @@ def settings_page(request: Request):
         "settings.html",
         {
             "request": request,
+            "user": current_user,
             "theme_previews": theme_previews,
             "current_theme": current_theme,
             "theme": theme,
@@ -290,10 +296,16 @@ def update_theme(
         current_user.theme_preference = theme_name
         db.commit()
 
-    # Update the HTML data-theme attribute via HTMX response
+    # Create response with theme cookie
     response = HTMLResponse("", status_code=200)
     set_theme_cookie(response, theme_name)
+
+    # Add HTMX headers for client-side updates
     response.headers["HX-Trigger"] = "themeChanged"
+    response.headers["HX-Trigger-After-Settle"] = json.dumps(
+        {"showMessage": "Theme updated successfully"}
+    )
+
     return response
 
 
