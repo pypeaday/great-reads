@@ -29,7 +29,7 @@ try:
 except ImportError:
     ADMIN_ENABLED = False
 
-from .auth import get_optional_current_user
+from .auth import get_optional_current_user, get_optional_current_user_sync
 
 # Load environment variables
 load_dotenv()
@@ -125,13 +125,29 @@ DEFAULT_THEME = "gruvbox-dark"
 
 
 def get_current_theme(request: Request) -> tuple[themes.ThemeColors, str]:
-    """Get the current theme colors based on cookie or default"""
-    theme_name = request.cookies.get("theme", DEFAULT_THEME)
-    theme = themes.get_theme(theme_name)
-    if not theme:
-        theme = themes.get_theme(DEFAULT_THEME)
-        theme_name = DEFAULT_THEME
-    return theme, theme_name
+    """Get the current theme colors based on user preference, cookie, or default"""
+    # Try to get current user
+    db = database.SessionLocal()
+    try:
+        current_user = get_optional_current_user_sync(
+            request.cookies.get("access_token"), db
+        )
+
+        # Get theme from user preference if logged in
+        if current_user and current_user.theme_preference:
+            theme_name = current_user.theme_preference
+        else:
+            # Fall back to cookie or default
+            theme_name = request.cookies.get("theme", DEFAULT_THEME)
+
+        theme = themes.get_theme(theme_name)
+        if not theme:
+            theme = themes.get_theme(DEFAULT_THEME)
+            theme_name = DEFAULT_THEME
+
+        return theme, theme_name
+    finally:
+        db.close()
 
 
 def set_theme_cookie(response: HTMLResponse, theme_name: str) -> None:
@@ -253,9 +269,19 @@ def settings_page(request: Request):
 
 
 @app.post("/settings/theme")
-def update_theme(request: Request, theme_name: str = Form(...)):
+def update_theme(
+    request: Request,
+    theme_name: str = Form(...),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_optional_current_user),
+):
     if theme_name not in themes.THEMES:
         raise HTTPException(status_code=400, detail="Invalid theme")
+
+    # Update user's theme preference if logged in
+    if current_user:
+        current_user.theme_preference = theme_name
+        db.commit()
 
     # Update the HTML data-theme attribute via HTMX response
     response = HTMLResponse("", status_code=200)

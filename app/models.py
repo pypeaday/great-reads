@@ -46,6 +46,9 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False)
     last_login = Column(DateTime)
+    theme_preference = Column(
+        String(50), default="gruvbox-dark"
+    )  # Store user's theme preference
     role = Column(
         String(20), ForeignKey("roles.name"), default="user", nullable=False
     )  # References role.name

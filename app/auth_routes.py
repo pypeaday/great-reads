@@ -111,13 +111,15 @@ async def register_user(
         set_theme_cookie(response, current_theme)
         return response
 
-    # Create new user
+    # Create new user with default role
     hashed_password = auth.get_password_hash(password)
     new_user = models.User(
         email=email,
         hashed_password=hashed_password,
         created_at=datetime.utcnow(),
         is_active=True,
+        role="user",  # Set default role
+        theme_preference="gruvbox-dark",  # Set default theme
     )
     db.add(new_user)
     db.commit()
