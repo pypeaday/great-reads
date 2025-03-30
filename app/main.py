@@ -138,13 +138,14 @@ def get_current_theme(request: Request) -> tuple[themes.ThemeColors, str]:
         if current_user and current_user.theme_preference:
             theme_name = current_user.theme_preference
         else:
-            # Fall back to cookie or default
-            theme_name = request.cookies.get("theme", DEFAULT_THEME)
+            # Check for theme cookie
+            cookie_theme = request.cookies.get("theme")
+            if cookie_theme and cookie_theme in themes.THEMES:
+                theme_name = cookie_theme
+            else:
+                theme_name = DEFAULT_THEME
 
         theme = themes.get_theme(theme_name)
-        if not theme:
-            theme = themes.get_theme(DEFAULT_THEME)
-            theme_name = DEFAULT_THEME
 
         return theme, theme_name
     finally:
@@ -296,13 +297,20 @@ def update_theme(
         current_user.theme_preference = theme_name
         db.commit()
 
-    # Create response with theme cookie
-    response = HTMLResponse("", status_code=200)
+    # Create response with theme cookie and inline script
+    response = HTMLResponse(
+        content=f"""
+        <script>
+            document.documentElement.dataset.theme = "{theme_name}";
+            window.dispatchEvent(new Event('themeChanged'));
+        </script>
+        """,
+        status_code=200,
+    )
     set_theme_cookie(response, theme_name)
 
     # Add HTMX headers for client-side updates
-    response.headers["HX-Trigger"] = "themeChanged"
-    response.headers["HX-Trigger-After-Settle"] = json.dumps(
+    response.headers["HX-Trigger"] = json.dumps(
         {"showMessage": "Theme updated successfully"}
     )
 

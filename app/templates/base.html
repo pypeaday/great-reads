@@ -46,17 +46,31 @@
             if (parts.length === 2) return parts.pop().split(';').shift();
         };
 
-        // Apply theme immediately before page load
-        const theme = getCookie('theme') || '{{ current_theme }}';
-        applyThemeColors(theme);
+        // Apply theme immediately
+        (() => {
+            const theme = getCookie('theme') || '{{ current_theme }}';
+            document.documentElement.dataset.theme = theme;
+            applyThemeColors(theme);
+        })();
 
-        // Reapply theme after navigation
-        document.addEventListener('DOMContentLoaded', () => {
-            const currentTheme = document.documentElement.dataset.theme;
-            if (currentTheme) {
-                applyThemeColors(currentTheme);
+        // Handle theme changes
+        window.addEventListener('themeChanged', () => {
+            const theme = getCookie('theme');
+            if (theme) {
+                document.documentElement.dataset.theme = theme;
+                applyThemeColors(theme).catch(console.error);
             }
         });
+
+        // Ensure theme persists across page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const theme = getCookie('theme') || document.documentElement.dataset.theme;
+                if (theme) {
+                    applyThemeColors(theme).catch(console.error);
+                }
+            });
+        }
 
         // Configure Tailwind theme
         tailwind.config = {
