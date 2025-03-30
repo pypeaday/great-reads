@@ -44,9 +44,9 @@
                         required
                         class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
                     {% for status in statuses %}
-                    <option value="{{ status }}" 
-                            {% if book and book.status.value == status %}selected{% endif %}>
-                        {{ status }}
+                    <option value="{{ status.name }}"
+                            {% if book and book.status == status %}selected{% endif %}>
+                        {{ status.value }}
                     </option>
                     {% endfor %}
                 </select>
@@ -58,7 +58,7 @@
                 <select name="rating" 
                         id="rating"
                         class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
-                    <option value="">No Rating</option>
+                    <option value="null">No Rating</option>
                     {% for i in range(4) %}
                     <option value="{{ i }}" 
                             {% if book and book.rating == i %}selected{% endif %}>

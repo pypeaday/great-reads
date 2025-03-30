@@ -2,12 +2,13 @@
 
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi import status as http_status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
-from . import models, auth
+from . import models, auth, roles
 from .database import get_db
 from .schemas import Book, BookCreate, BookUpdate
 from .roles import requires_permission
@@ -35,13 +36,13 @@ async def list_books(
     query = db.query(models.Book)
 
     # Filter by user unless they have permission to view all books
-    if not auth.has_permission(current_user, "view_all_books"):
+    if not roles.has_permission(current_user, "view_all_books"):
         query = query.filter(models.Book.user_id == current_user.id)
 
     # Apply status filter if provided
     if status_filter:
         try:
-            book_status = models.BookStatus[status_filter.upper()]
+            book_status = models.BookStatus[status_filter]
             query = query.filter(models.Book.status == book_status)
         except KeyError:
             raise HTTPException(status_code=400, detail="Invalid status filter")
@@ -56,7 +57,7 @@ async def list_books(
             "current_user": current_user,
             "books": books,
             "status_filter": status_filter,
-            "statuses": [status.value for status in models.BookStatus],
+            "statuses": [status for status in models.BookStatus],
         },
     )
 
@@ -76,7 +77,7 @@ async def new_book_form(
             "request": request,
             "current_user": current_user,
             "book": None,
-            "statuses": [status.value for status in models.BookStatus],
+            "statuses": [status for status in models.BookStatus],
             "is_new": True,
         },
     )
@@ -92,7 +93,7 @@ async def create_book(
     author: str = Form(...),
     status: str = Form(...),
     notes: Optional[str] = Form(None),
-    rating: Optional[int] = Form(None),
+    rating: Optional[str] = Form(None),
 ):
     """Create a new book."""
     # Validate status
@@ -101,9 +102,19 @@ async def create_book(
     except KeyError:
         raise HTTPException(status_code=400, detail="Invalid status")
 
-    # Validate rating
-    if rating is not None and not 0 <= rating <= 3:
-        raise HTTPException(status_code=400, detail="Rating must be between 0 and 3")
+    # Handle rating
+    parsed_rating = None
+    if rating is not None and rating != "null":
+        try:
+            parsed_rating = int(rating)
+            if not 0 <= parsed_rating <= 3:
+                raise HTTPException(
+                    status_code=400, detail="Rating must be between 0 and 3"
+                )
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail="Rating must be a valid integer between 0 and 3"
+            )
 
     # Create book
     now = datetime.utcnow()
@@ -112,7 +123,7 @@ async def create_book(
         author=author,
         status=book_status,
         notes=notes,
-        rating=rating,
+        rating=parsed_rating,
         user_id=current_user.id,
         created_at=now,
         updated_at=now,
@@ -125,7 +136,7 @@ async def create_book(
 
     return RedirectResponse(
         url="/books",
-        status_code=status.HTTP_303_SEE_OTHER,
+        status_code=http_status.HTTP_303_SEE_OTHER,
     )
 
 
@@ -155,7 +166,7 @@ async def edit_book_form(
             "request": request,
             "current_user": current_user,
             "book": book,
-            "statuses": [status.value for status in models.BookStatus],
+            "statuses": [status for status in models.BookStatus],
             "is_new": False,
         },
     )
@@ -172,7 +183,7 @@ async def update_book(
     author: str = Form(...),
     status: str = Form(...),
     notes: Optional[str] = Form(None),
-    rating: Optional[int] = Form(None),
+    rating: Optional[str] = Form(None),
 ):
     """Update a book's information."""
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
@@ -191,9 +202,19 @@ async def update_book(
     except KeyError:
         raise HTTPException(status_code=400, detail="Invalid status")
 
-    # Validate rating
-    if rating is not None and not 0 <= rating <= 3:
-        raise HTTPException(status_code=400, detail="Rating must be between 0 and 3")
+    # Handle rating
+    parsed_rating = None
+    if rating is not None and rating != "null":
+        try:
+            parsed_rating = int(rating)
+            if not 0 <= parsed_rating <= 3:
+                raise HTTPException(
+                    status_code=400, detail="Rating must be between 0 and 3"
+                )
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail="Rating must be a valid integer between 0 and 3"
+            )
 
     # Update start_date if status changes to READING
     if (
@@ -214,13 +235,13 @@ async def update_book(
     book.author = author
     book.status = new_status
     book.notes = notes
-    book.rating = rating
+    book.rating = parsed_rating
     book.updated_at = datetime.utcnow()
     db.commit()
 
     return RedirectResponse(
         url="/books",
-        status_code=status.HTTP_303_SEE_OTHER,
+        status_code=http_status.HTTP_303_SEE_OTHER,
     )
 
 

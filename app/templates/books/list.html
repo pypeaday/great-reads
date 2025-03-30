@@ -15,8 +15,8 @@
             <select name="status_filter" class="bg-bg1 text-fg border border-bg2 rounded px-3 py-2">
                 <option value="">All Statuses</option>
                 {% for status in statuses %}
-                <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>
-                    {{ status }}
+                <option value="{{ status.name }}" {% if status_filter == status.name %}selected{% endif %}>
+                    {{ status.value }}
                 </option>
                 {% endfor %}
             </select>
@@ -30,9 +30,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {% for status in statuses %}
         <div class="bg-bg1 rounded-lg shadow-lg p-4">
-            <h2 class="text-lg font-semibold mb-4 text-center text-fg">{{ status }}</h2>
+            <h2 class="text-lg font-semibold mb-4 text-center text-fg">{{ status.value }}</h2>
             <div class="space-y-4">
-                {% set status_books = books|selectattr("status.value", "equalto", status)|list %}
+                {% set status_books = books|selectattr("status", "equalto", status)|list %}
                 {% if status_books %}
                     {% for book in status_books %}
                     <div class="bg-bg2 rounded-lg p-4">
