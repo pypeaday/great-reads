@@ -127,13 +127,22 @@ async def create_user(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
-    email: str = Form(...),
-    password: str = Form(...),
-    name: str = Form(None),
-    role: str = Form("user"),
-    is_active: bool = Form(True),
 ):
     """Create a new user."""
+    # Get form data
+    form_data = await request.form()
+    
+    # Extract form fields
+    email = form_data.get("email")
+    password = form_data.get("password")
+    name = form_data.get("name")
+    role = form_data.get("role", "user")
+    is_active = form_data.get("is_active")
+    
+    # Validate required fields
+    if not email or not password:
+        raise HTTPException(status_code=422, detail="Email and password are required")
+    
     # Check if email already exists
     if db.query(models.User).filter(models.User.email == email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -148,7 +157,7 @@ async def create_user(
         name=name,
         hashed_password=get_password_hash(password),
         role=role,
-        is_active=is_active,
+        is_active=is_active is not None,  # Convert form input to boolean
         created_at=datetime.utcnow(),
     )
     db.add(user)
@@ -168,12 +177,21 @@ async def update_user(
     user_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
-    email: str = Form(...),
-    name: str = Form(None),
-    role: str = Form("user"),
-    is_active: bool = Form(True),
 ):
     """Update a user's information."""
+    # Get form data
+    form_data = await request.form()
+    
+    # Extract form fields
+    email = form_data.get("email")
+    name = form_data.get("name")
+    role = form_data.get("role", "user")
+    is_active = form_data.get("is_active")
+    
+    # Validate required fields
+    if not email:
+        raise HTTPException(status_code=422, detail="Email is required")
+    
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -199,7 +217,7 @@ async def update_user(
     user.email = email
     user.name = name
     user.role = role
-    user.is_active = is_active
+    user.is_active = is_active is not None  # Convert form input to boolean
     db.commit()
 
     return RedirectResponse(
