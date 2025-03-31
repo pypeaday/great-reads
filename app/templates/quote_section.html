@@ -1,0 +1,77 @@
+<!-- Literary Quote of the Day -->
+<div class="bg-theme-bg2/90 rounded-xl p-6 border-l-4 border-l-theme-accent shadow-lg mb-8 relative overflow-hidden">
+    <div class="absolute -bottom-8 -right-8 text-9xl opacity-5 text-theme-accent">
+        <i class="fas fa-quote-right"></i>
+    </div>
+    
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold flex items-center">
+            <span class="bg-theme-accent/20 text-theme-accent p-2 rounded-lg mr-3">
+                <i class="fas fa-feather-alt"></i>
+            </span>
+            Literary Quote of the Day
+        </h2>
+        <button id="refresh-quote" class="p-2 text-theme-fg2 hover:text-theme-accent hover:bg-theme-bg1/70 rounded-full transition-all duration-300 transform hover:scale-110">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    
+    <div id="quote-container" class="italic text-theme-fg1 relative z-10">
+        <div class="flex">
+            <div class="text-4xl text-theme-accent/30 leading-none mr-2">"</div>
+            <blockquote class="text-lg mb-2">Books are a uniquely portable magic.</blockquote>
+            <div class="text-4xl text-theme-accent/30 leading-none self-end">"</div>
+        </div>
+        <cite class="text-sm text-theme-fg2 block text-right mt-2">— Stephen King</cite>
+    </div>
+</div>
+
+<script>
+    // Literary quotes data
+    const quotes = [
+        { text: "Books are a uniquely portable magic.", author: "Stephen King" },
+        { text: "A reader lives a thousand lives before he dies. The man who never reads lives only one.", author: "George R.R. Martin" },
+        { text: "Reading is to the mind what exercise is to the body.", author: "Joseph Addison" },
+        { text: "That's the thing about books. They let you travel without moving your feet.", author: "Jhumpa Lahiri" },
+        { text: "The more that you read, the more things you will know. The more that you learn, the more places you'll go.", author: "Dr. Seuss" },
+        { text: "A book is a dream that you hold in your hand.", author: "Neil Gaiman" },
+        { text: "Reading is an exercise in empathy; an exercise in walking in someone else's shoes for a while.", author: "Malorie Blackman" },
+        { text: "Books are the quietest and most constant of friends; they are the most accessible and wisest of counselors, and the most patient of teachers.", author: "Charles W. Eliot" },
+        { text: "You can never get a cup of tea large enough or a book long enough to suit me.", author: "C.S. Lewis" },
+        { text: "If you don't like to read, you haven't found the right book.", author: "J.K. Rowling" }
+    ];
+    
+    // Function to refresh the quote
+    function refreshQuote() {
+        const quoteContainer = document.getElementById('quote-container');
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        
+        // Fade out
+        quoteContainer.style.transition = 'opacity 0.3s ease';
+        quoteContainer.style.opacity = '0';
+        
+        setTimeout(() => {
+            quoteContainer.innerHTML = `
+                <div class="flex">
+                    <div class="text-4xl text-theme-accent/30 leading-none mr-2">"</div>
+                    <blockquote class="text-lg mb-2">${randomQuote.text}</blockquote>
+                    <div class="text-4xl text-theme-accent/30 leading-none self-end">"</div>
+                </div>
+                <cite class="text-sm text-theme-fg2 block text-right mt-2">— ${randomQuote.author}</cite>
+            `;
+            
+            // Fade in
+            quoteContainer.style.opacity = '1';
+        }, 300);
+    }
+    
+    // Add event listener to refresh button
+    document.getElementById('refresh-quote')?.addEventListener('click', function() {
+        // Add button animation
+        this.classList.add('animate-spin');
+        setTimeout(() => {
+            this.classList.remove('animate-spin');
+        }, 500);
+        refreshQuote();
+    });
+</script>

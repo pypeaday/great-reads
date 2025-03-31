@@ -227,6 +227,21 @@
 
     <div id="toast" class="toast" _="on htmx:afterRequest if event.detail.successful wait 0.1s add .show wait 3s remove .show"></div>
 
+    <!-- Book Modal -->    
+    <div id="book-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
+        <div class="bg-theme-bg rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center p-4 border-b border-theme-bg2">
+                <h3 class="text-xl font-bold">Book Details</h3>
+                <button onclick="closeModal()" class="text-theme-fg1 hover:text-theme-error transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="p-4">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         htmx.on("showMessage", (e) => {
             const toast = document.getElementById("toast");

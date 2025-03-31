@@ -1,0 +1,131 @@
+<!-- Book Modal Template -->
+<div class="p-6">
+    <!-- Title and Author -->
+    <div class="mb-6">
+        <form hx-put="/books/{{ book.id }}/inline-update" 
+              hx-target="#modal-content" 
+              hx-swap="innerHTML">
+            <input type="hidden" name="update_type" value="title">
+            <div class="mb-4">
+                <label for="title" class="block text-sm font-medium text-theme-fg1 mb-1">Title</label>
+                <input type="text" id="title" name="title" value="{{ book.title }}" 
+                       class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">
+            </div>
+            
+            <input type="hidden" name="update_type" value="author">
+            <div class="mb-4">
+                <label for="author" class="block text-sm font-medium text-theme-fg1 mb-1">Author</label>
+                <input type="text" id="author" name="author" value="{{ book.author }}" 
+                       class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Status -->
+        <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
+            <form hx-put="/books/{{ book.id }}/inline-update" 
+                  hx-target="#modal-content" 
+                  hx-swap="innerHTML">
+                <input type="hidden" name="update_type" value="status">
+                <div class="mb-4">
+                    <label for="status" class="block text-sm font-medium text-theme-fg1 mb-1">Status</label>
+                    <select id="status" name="status" 
+                            class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">
+                        {% for status_option in book_statuses %}
+                        <option value="{{ status_option.name }}" {% if book.status == status_option %}selected{% endif %}>
+                            {{ status_option.name|replace('_', ' ')|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
+                        Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Rating -->
+        <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
+            <form hx-put="/books/{{ book.id }}/inline-update" 
+                  hx-target="#modal-content" 
+                  hx-swap="innerHTML">
+                <input type="hidden" name="update_type" value="rating">
+                <div class="mb-4">
+                    <label for="rating" class="block text-sm font-medium text-theme-fg1 mb-1">Rating</label>
+                    <select id="rating" name="rating" 
+                            class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">
+                        <option value="null" {% if book.rating is none %}selected{% endif %}>None</option>
+                        <option value="1" {% if book.rating == 1 %}selected{% endif %}>★</option>
+                        <option value="2" {% if book.rating == 2 %}selected{% endif %}>★★</option>
+                        <option value="3" {% if book.rating == 3 %}selected{% endif %}>★★★</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
+                        Update Rating
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Notes -->
+    <div class="mt-6 bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
+        <form hx-put="/books/{{ book.id }}/inline-update" 
+              hx-target="#modal-content" 
+              hx-swap="innerHTML">
+            <input type="hidden" name="update_type" value="notes">
+            <div class="mb-4">
+                <label for="notes" class="block text-sm font-medium text-theme-fg1 mb-1">Notes</label>
+                <textarea id="notes" name="notes" rows="4" 
+                          class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">{{ book.notes or "" }}</textarea>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
+                    Save Notes
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Dates -->
+    <div class="mt-6 bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
+        <h3 class="text-lg font-semibold mb-3">Dates</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-theme-fg1">Added: {{ book.created_at.strftime('%Y-%m-%d') }}</p>
+                {% if book.updated_at %}
+                <p class="text-theme-fg1 mt-1">Last Updated: {{ book.updated_at.strftime('%Y-%m-%d') }}</p>
+                {% endif %}
+            </div>
+            <div>
+                {% if book.start_date %}
+                <p class="text-theme-fg1">Started: {{ book.start_date.strftime('%Y-%m-%d') }}</p>
+                {% endif %}
+                {% if book.completion_date %}
+                <p class="text-theme-fg1 mt-1">Finished: {{ book.completion_date.strftime('%Y-%m-%d') }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Button -->
+    <div class="mt-6 flex justify-end">
+        <button onclick="if(confirm('Are you sure you want to delete this book?')) { deleteBook('{{ book.id }}'); closeModal(); }" 
+                class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+            Delete Book
+        </button>
+    </div>
+</div>

@@ -291,6 +291,8 @@ async def inline_update_book(
     notes: str | None = Form(None),
     status: str | None = Form(None),
     rating: str | None = Form(None),
+    title: str | None = Form(None),
+    author: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
@@ -344,6 +346,16 @@ async def inline_update_book(
                     status_code=400,
                     detail="Rating must be a valid integer between 0 and 3"
                 ) from None
+    elif update_type == "title" and title is not None:
+        # Update title
+        if not title.strip():
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        book.title = title.strip()
+    elif update_type == "author" and author is not None:
+        # Update author
+        if not author.strip():
+            raise HTTPException(status_code=400, detail="Author cannot be empty")
+        book.author = author.strip()
     else:
         raise HTTPException(
             status_code=400, detail="Invalid update type or missing data"
@@ -355,7 +367,15 @@ async def inline_update_book(
 
     # Get all books for the current status to render the updated book in context
     templates = get_templates(request)
-    # Return just the updated book HTML
+
+    # If this was a status update, redirect to refresh the page
+    if update_type == "status":
+        return RedirectResponse(
+            url="/",
+            status_code=http_status.HTTP_303_SEE_OTHER
+        )
+
+    # For other updates, return just the updated book HTML
     return templates.TemplateResponse(
         "books/book_card.html",
         {
@@ -365,3 +385,87 @@ async def inline_update_book(
             "statuses": list(models.BookStatus),
         },
     )
+
+
+@router.get("/{book_id}/modal", response_class=HTMLResponse, response_model=None)
+async def book_modal(
+    request: Request,
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    """Get book details for modal display."""
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Check if user has permission to view this book
+    if book.user_id != current_user.id and not roles.has_permission(
+        current_user, "view_all_books"
+    ):
+        raise HTTPException(status_code=403, detail="Not authorized to view this book")
+
+    templates = get_templates(request)
+    return templates.TemplateResponse(
+        "books/book_modal.html",
+        {
+            "request": request,
+            "book": book,
+            "book_statuses": list(models.BookStatus),
+            "current_user": current_user
+        }
+    )
+
+
+@router.put("/{book_id}/status", response_model=None)
+@requires_permission("manage_own_books")
+async def update_book_status(
+    request: Request,
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    """Update a book's status via drag-and-drop."""
+    # Get JSON data from request
+    status_data = await request.json()
+    # Get the book
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Check if user has permission to edit this book
+    if book.user_id != current_user.id and not roles.has_permission(
+        current_user, "manage_all_books"
+    ):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this book")
+
+    # Get the new status from request body
+    new_status_name = status_data.get("status")
+    if not new_status_name:
+        raise HTTPException(status_code=400, detail="Status is required")
+
+    # Validate status
+    try:
+        new_status = models.BookStatus[new_status_name.upper()]
+    except KeyError:
+        raise HTTPException(status_code=400, detail="Invalid status") from None
+
+    # Skip update if status hasn't changed
+    if book.status == new_status:
+        return {"success": True, "message": "Status unchanged"}
+
+    # Update start_date if status changes to READING
+    now = datetime.utcnow()
+    if new_status == models.BookStatus.READING and book.status != models.BookStatus.READING:
+        book.start_date = now
+
+    # Update completion_date if status changes to COMPLETED
+    if new_status == models.BookStatus.COMPLETED and book.status != models.BookStatus.COMPLETED:
+        book.completion_date = now
+
+    # Update book status
+    book.status = new_status
+    book.updated_at = now
+    db.commit()
+
+    return {"success": True, "message": "Status updated successfully"}

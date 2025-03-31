@@ -1,90 +1,310 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto px-4 py-6 text-theme-fg">
+    <style>
+        /* Custom styles for the dashboard */
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .book-card {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+        }
+        .book-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .section-header {
+            position: relative;
+            overflow: hidden;
+        }
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            background: linear-gradient(90deg, var(--theme-accent), transparent);
+        }
+        .shadow-glow {
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
     {% if not user %}
-    <div class="flex justify-center space-x-4">
-        <a href="/login" class="px-6 py-3 bg-theme-accent text-white rounded-lg hover:opacity-90 transition-opacity text-lg">
-            <i class="fas fa-sign-in-alt mr-2"></i>Login
-        </a>
-        <a href="/register" class="px-6 py-3 bg-theme-bg2 text-theme-fg rounded-lg hover:bg-theme-bg border border-theme-bg2 transition-colors text-lg">
-            <i class="fas fa-user-plus mr-2"></i>Register
-        </a>
+    <!-- Welcome screen for non-logged in users -->
+    <div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold mb-4 text-theme-accent">Your Reading Journey Awaits</h1>
+            <p class="text-xl text-theme-fg1 max-w-2xl mx-auto">Track your reading adventures, discover new worlds, and connect with your literary self.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-4 mt-6">
+            <a href="/login" class="px-8 py-4 bg-theme-accent text-white rounded-lg hover:opacity-90 transition-all transform hover:-translate-y-1 text-lg font-medium shadow-lg">
+                <i class="fas fa-book-open mr-2"></i>Begin Your Journey
+            </a>
+            <a href="/register" class="px-8 py-4 bg-theme-bg2 text-theme-fg rounded-lg hover:bg-theme-bg border border-theme-accent transition-all transform hover:-translate-y-1 text-lg font-medium shadow-lg">
+                <i class="fas fa-feather-alt mr-2"></i>Create Your Bookshelf
+            </a>
+        </div>
     </div>
     {% else %}
     <div class="mb-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">{{ user.email.split('@')[0] }}'s Reading Dashboard</h1>
-            <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
-                <i class="fas fa-plus mr-2"></i>Add Book
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold flex items-center">
+                    <span class="bg-theme-accent/20 text-theme-accent p-2 rounded-lg mr-3">
+                        <i class="fas fa-book-reader"></i>
+                    </span>
+                    {{ user.email.split('@')[0] }}'s Reading Dashboard
+                </h1>
+                <p class="text-theme-fg2 mt-1 ml-12">Track, organize, and discover your reading journey</p>
+            </div>
+            <a href="/books/new" class="px-5 py-2.5 bg-theme-accent text-white rounded-lg hover:bg-theme-accent/90 transition-all duration-300 transform hover:-translate-y-1 flex items-center shadow-lg group">
+                <span class="bg-white/20 rounded-full p-1 mr-2 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-plus"></i>
+                </span>
+                Add Book
             </a>
         </div>
         
         <!-- Quick Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             {% for status in book_statuses %}
             {% set count = books_by_status.get(status, [])|length %}
-            <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2 text-center">
-                <div class="text-2xl font-bold mb-1">{{ count }}</div>
-                <div class="text-sm text-theme-fg1">{{ status.value }}</div>
+            <div class="stat-card bg-theme-bg2/90 rounded-xl p-5 border border-theme-bg2/50 text-center shadow-lg relative overflow-hidden">
+                <!-- Accent bar -->
+                <div class="absolute top-0 left-0 w-1 h-full
+                    {% if status.name == 'TO_READ' %}bg-blue-400
+                    {% elif status.name == 'READING' %}bg-yellow-400
+                    {% elif status.name == 'COMPLETED' %}bg-green-400
+                    {% elif status.name == 'ON_HOLD' %}bg-purple-400
+                    {% elif status.name == 'DNF' %}bg-red-400
+                    {% endif %}"></div>
+                
+                <!-- Subtle background icon -->
+                <div class="absolute -bottom-6 -right-6 text-6xl opacity-5
+                    {% if status.name == 'TO_READ' %}text-blue-400
+                    {% elif status.name == 'READING' %}text-yellow-400
+                    {% elif status.name == 'COMPLETED' %}text-green-400
+                    {% elif status.name == 'ON_HOLD' %}text-purple-400
+                    {% elif status.name == 'DNF' %}text-red-400
+                    {% endif %}">
+                    {% if status.name == 'TO_READ' %}<i class="fas fa-bookmark"></i>
+                    {% elif status.name == 'READING' %}<i class="fas fa-book-open"></i>
+                    {% elif status.name == 'COMPLETED' %}<i class="fas fa-check-circle"></i>
+                    {% elif status.name == 'ON_HOLD' %}<i class="fas fa-pause-circle"></i>
+                    {% elif status.name == 'DNF' %}<i class="fas fa-times-circle"></i>
+                    {% endif %}
+                </div>
+                
+                <!-- Count -->
+                <div class="text-3xl font-bold mb-2 
+                    {% if status.name == 'TO_READ' %}text-blue-400
+                    {% elif status.name == 'READING' %}text-yellow-400
+                    {% elif status.name == 'COMPLETED' %}text-green-400
+                    {% elif status.name == 'ON_HOLD' %}text-purple-400
+                    {% elif status.name == 'DNF' %}text-red-400
+                    {% endif %}">{{ count }}</div>
+                
+                <!-- Label -->
+                <div class="text-sm font-medium text-theme-fg1 flex items-center justify-center">
+                    <span class="mr-2 text-xs
+                        {% if status.name == 'TO_READ' %}text-blue-400
+                        {% elif status.name == 'READING' %}text-yellow-400
+                        {% elif status.name == 'COMPLETED' %}text-green-400
+                        {% elif status.name == 'ON_HOLD' %}text-purple-400
+                        {% elif status.name == 'DNF' %}text-red-400
+                        {% endif %}">
+                        {% if status.name == 'TO_READ' %}<i class="fas fa-bookmark"></i>
+                        {% elif status.name == 'READING' %}<i class="fas fa-book-open"></i>
+                        {% elif status.name == 'COMPLETED' %}<i class="fas fa-check-circle"></i>
+                        {% elif status.name == 'ON_HOLD' %}<i class="fas fa-pause-circle"></i>
+                        {% elif status.name == 'DNF' %}<i class="fas fa-times-circle"></i>
+                        {% endif %}
+                    </span>
+                    {{ status.value }}
+                </div>
             </div>
             {% endfor %}
         </div>
 
-        <!-- Book Dashboard -->
+        <!-- Trello-like Book Board -->
         {% if books_by_status %}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="flex flex-col md:flex-row gap-4 overflow-x-auto pb-4" style="min-height: 70vh;">
             {% for status in book_statuses %}
             {% if status in books_by_status %}
-            <div class="bg-theme-bg1 rounded-lg shadow-lg border border-theme-bg2">
-                <div class="p-4 border-b border-theme-bg2">
-                    <button class="w-full flex justify-between items-center text-left"
-                            onclick="toggleSection('{{ status.name }}')"
-                            aria-expanded="true"
-                            aria-controls="section-{{ status.name }}">
+            <div class="book-column flex-shrink-0 w-full md:w-80 bg-theme-bg1/80 rounded-xl shadow-lg border border-theme-bg2/50 overflow-hidden flex flex-col" data-status="{{ status.name }}">
+                <!-- Column Header -->
+                <div class="p-4 border-b border-theme-bg2 bg-theme-bg2/80 sticky top-0 z-10">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center">
-                            <h2 class="text-xl font-bold">{{ status.value }}</h2>
-                            <span class="ml-3 px-2 py-1 bg-theme-bg2 rounded-full text-sm">
-                                {{ books_by_status[status]|length }}
-                            </span>
+                            <div class="w-3 h-3 rounded-full mr-3
+                                {% if status.name == 'TO_READ' %}bg-blue-400
+                                {% elif status.name == 'READING' %}bg-yellow-400
+                                {% elif status.name == 'COMPLETED' %}bg-green-400
+                                {% elif status.name == 'ON_HOLD' %}bg-purple-400
+                                {% elif status.name == 'DNF' %}bg-red-400
+                                {% endif %}"></div>
+                            <h2 class="text-lg font-bold">{{ status.value }}</h2>
                         </div>
-                        <i class="fas fa-chevron-down transition-transform" id="icon-{{ status.name }}"></i>
-                    </button>
+                        <span class="px-2 py-1 bg-theme-bg2/80 rounded-full text-xs font-medium">
+                            {{ books_by_status[status]|length }}
+                        </span>
+                    </div>
                 </div>
                 
-                <div id="section-{{ status.name }}" class="max-h-[400px] overflow-y-auto">
-                    <div class="divide-y divide-theme-bg2">
-                        {% for book in books_by_status[status] %}
-                        <div class="p-4 hover:bg-theme-bg2/50 transition-colors">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-semibold">{{ book.title }}</h3>
-                                    <p class="text-theme-fg1">{{ book.author }}</p>
-                                </div>
+                <!-- Book Cards Container -->
+                <div class="flex-1 p-3 space-y-3 overflow-y-auto" id="book-list-{{ status.name }}">
+                    {% for book in books_by_status[status] %}
+                    <div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
+                        <!-- Card Header with label -->
+                        <div class="px-3 pt-3 pb-1 flex items-center justify-between">
+                            <div class="flex items-center space-x-1.5">
                                 {% if book.rating is not none %}
-                                <div class="text-theme-accent">
-                                    {{ "★" * book.rating }}{{ "☆" * (3 - book.rating) }}
+                                <div class="text-yellow-400 flex items-center text-xs">
+                                    {% for i in range(book.rating) %}
+                                        <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                    {% for i in range(3 - book.rating) %}
+                                        <i class="far fa-star"></i>
+                                    {% endfor %}
                                 </div>
                                 {% endif %}
                             </div>
-                            {% if book.start_date and status.value == "Currently Reading" %}
-                            <div class="mt-2 text-sm text-theme-fg1">
-                                Started: {{ book.start_date.strftime('%Y-%m-%d') }}
+                            <div class="flex space-x-1">
+                                {% if book.pages %}
+                                <span class="text-xs text-theme-fg2 bg-theme-bg1/40 px-1.5 py-0.5 rounded">
+                                    {{ book.pages }} p
+                                </span>
+                                {% endif %}
+                                <button onclick="deleteBook('{{ book.id }}'); event.stopPropagation();" class="text-theme-fg2 hover:text-red-400 transition-all p-1 rounded" title="Delete Book">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
                             </div>
-                            {% endif %}
-                            {% if book.completion_date and status.value == "Completed" %}
-                            <div class="mt-2 text-sm text-theme-fg1">
-                                Finished: {{ book.completion_date.strftime('%Y-%m-%d') }}
-                            </div>
-                            {% endif %}
                         </div>
-                        {% endfor %}
+                        
+                        <!-- Card Content -->
+                        <div class="p-3 pt-1 cursor-pointer" onclick="openModal('{{ book.id }}')">
+                            <!-- Title with colored accent -->
+                            <div class="relative mb-2">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full
+                                    {% if status.name == 'TO_READ' %}bg-blue-400
+                                    {% elif status.name == 'READING' %}bg-yellow-400
+                                    {% elif status.name == 'COMPLETED' %}bg-green-400
+                                    {% elif status.name == 'ON_HOLD' %}bg-purple-400
+                                    {% elif status.name == 'DNF' %}bg-red-400
+                                    {% endif %}"></div>
+                                <h3 class="font-semibold text-sm leading-tight pl-2.5 line-clamp-2">{{ book.title }}</h3>
+                            </div>
+                            
+                            <!-- Author -->
+                            <p class="text-theme-fg1 text-xs opacity-75 flex items-center mt-1">
+                                <i class="fas fa-user-edit text-theme-fg2 mr-1.5 text-[10px]"></i> {{ book.author }}
+                            </p>
+                            
+                            <!-- Footer with date -->
+                            <div class="flex justify-between items-center mt-3 pt-2 border-t border-theme-bg1/20">
+                                <span class="text-xs text-theme-fg2 flex items-center">
+                                    <i class="fas fa-calendar-alt mr-1 text-[10px]"></i>
+                                    {{ book.created_at.strftime('%b %d') }}
+                                </span>
+                                <button class="text-xs text-theme-fg2 hover:text-theme-accent">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
+                    
+                    <!-- Add Book Card -->
+                    <a href="/books/new?status={{ status.name }}" class="flex items-center justify-center p-3 bg-theme-bg1/50 hover:bg-theme-bg1/80 rounded-lg border border-dashed border-theme-bg2/50 text-theme-fg2 hover:text-theme-accent transition-colors">
+                        <i class="fas fa-plus mr-2"></i> Add a book
+                    </a>
                 </div>
             </div>
             {% endif %}
             {% endfor %}
         </div>
+        
+        <script>
+            // Drag and drop functionality
+            function drag(event, bookId) {
+                event.dataTransfer.setData("bookId", bookId);
+            }
+            
+            // Add event listeners for drag and drop
+            document.addEventListener('DOMContentLoaded', function() {
+                const columns = document.querySelectorAll('.book-column');
+                
+                columns.forEach(column => {
+                    column.addEventListener('dragover', function(event) {
+                        event.preventDefault();
+                        this.classList.add('bg-theme-bg1');
+                    });
+                    
+                    column.addEventListener('dragleave', function() {
+                        this.classList.remove('bg-theme-bg1');
+                    });
+                    
+                    column.addEventListener('drop', function(event) {
+                        event.preventDefault();
+                        this.classList.remove('bg-theme-bg1');
+                        
+                        const bookId = event.dataTransfer.getData("bookId");
+                        const targetStatus = this.dataset.status;
+                        
+                        // Update book status via API
+                        fetch(`/books/${bookId}/status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                status: targetStatus
+                            })
+                        }).then(response => {
+                            if (response.ok) {
+                                // Move the card to the new column
+                                const bookCard = document.getElementById(`book-${bookId}`);
+                                const targetContainer = document.getElementById(`book-list-${targetStatus}`);
+                                
+                                if (bookCard && targetContainer) {
+                                    targetContainer.prepend(bookCard);
+                                }
+                            } else {
+                                alert('Failed to update book status');
+                            }
+                        }).catch(error => {
+                            console.error('Error:', error);
+                        });
+                    });
+                });
+            });
+        </script>
+
 
         <script>
             function toggleSection(sectionId) {
@@ -93,14 +313,237 @@
                 const button = icon.parentElement;
                 
                 if (section.style.display === 'none') {
+                    // Show section
                     section.style.display = 'block';
                     icon.style.transform = 'rotate(0deg)';
                     button.setAttribute('aria-expanded', 'true');
+                    
+                    // Add staggered animation to book cards
+                    const cards = section.querySelectorAll('.book-card');
+                    cards.forEach((card, index) => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 50 + index * 75);
+                    });
                 } else {
-                    section.style.display = 'none';
+                    // Animate section closed
                     icon.style.transform = 'rotate(-90deg)';
                     button.setAttribute('aria-expanded', 'false');
+                    
+                    // Fade out cards before hiding section
+                    const cards = section.querySelectorAll('.book-card');
+                    cards.forEach((card, index) => {
+                        setTimeout(() => {
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateY(10px)';
+                        }, index * 50);
+                    });
+                    
+                    // Hide section after animations complete
+                    setTimeout(() => {
+                        section.style.display = 'none';
+                    }, cards.length * 50 + 100);
                 }
+            }
+            
+            function deleteBook(bookId) {
+                if (confirm('Are you sure you want to delete this book?')) {
+                    fetch(`/books/${bookId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            // Remove the book card from the UI
+                            const bookElement = document.getElementById(`book-${bookId}`);
+                            if (bookElement) {
+                                bookElement.remove();
+                            }
+                            // Refresh the page to update counts
+                            window.location.reload();
+                        } else {
+                            alert('Failed to delete book');
+                        }
+                    }).catch(error => {
+                        console.error('Error deleting book:', error);
+                        alert('An error occurred while deleting the book');
+                    });
+                }
+            }
+            
+            // Quote of the Day functionality
+            const quotes = [
+                { text: "Books are a uniquely portable magic.", author: "Stephen King" },
+                { text: "A reader lives a thousand lives before he dies. The man who never reads lives only one.", author: "George R.R. Martin" },
+                { text: "Until I feared I would lose it, I never loved to read. One does not love breathing.", author: "Harper Lee" },
+                { text: "You can never get a cup of tea large enough or a book long enough to suit me.", author: "C.S. Lewis" },
+                { text: "Reading is to the mind what exercise is to the body.", author: "Joseph Addison" },
+                { text: "The more that you read, the more things you will know. The more that you learn, the more places you'll go.", author: "Dr. Seuss" },
+                { text: "I have always imagined that Paradise will be a kind of library.", author: "Jorge Luis Borges" },
+                { text: "Books are mirrors: you only see in them what you already have inside you.", author: "Carlos Ruiz Zafón" },
+                { text: "Reading brings us unknown friends.", author: "Honoré de Balzac" },
+                { text: "A book is a dream that you hold in your hand.", author: "Neil Gaiman" }
+            ];
+            
+            function refreshQuote() {
+                const quoteContainer = document.getElementById('quote-container');
+                quoteContainer.classList.add('animate-pulse');
+                
+                setTimeout(() => {
+                    const randomIndex = Math.floor(Math.random() * quotes.length);
+                    const quote = quotes[randomIndex];
+                    
+                    document.getElementById('quote-text').textContent = `"${quote.text}"`;
+                    document.getElementById('quote-author').textContent = `— ${quote.author}`;
+                    
+                    quoteContainer.classList.remove('animate-pulse');
+                }, 500);
+            }
+            
+            function toggleEditMode(bookId, section = null) {
+                const bookCard = document.getElementById(`book-${bookId}`);
+                
+                if (section) {
+                    // Toggle specific section only
+                    const viewElement = document.getElementById(`${section}-view-${bookId}`);
+                    const editElement = document.getElementById(`${section}-edit-${bookId}`);
+                    
+                    if (viewElement && editElement) {
+                        if (editElement.classList.contains('hidden')) {
+                            // Switch to edit mode for this section
+                            viewElement.classList.add('hidden');
+                            editElement.classList.remove('hidden');
+                            
+                            // Focus on the first input/select/textarea
+                            const input = editElement.querySelector('input, select, textarea');
+                            if (input) input.focus();
+                        } else {
+                            // Switch back to view mode
+                            editElement.classList.add('hidden');
+                            viewElement.classList.remove('hidden');
+                        }
+                    }
+                } else {
+                    // Toggle all sections
+                    const viewElements = bookCard.querySelectorAll('.view-mode');
+                    const editElements = bookCard.querySelectorAll('.edit-mode');
+                    
+                    // Check if we're currently in edit mode
+                    const isInEditMode = Array.from(editElements).some(el => !el.classList.contains('hidden'));
+                    
+                    if (isInEditMode) {
+                        // Switch all to view mode
+                        editElements.forEach(el => el.classList.add('hidden'));
+                        viewElements.forEach(el => el.classList.remove('hidden'));
+                    } else {
+                        // Show status edit by default when clicking the main edit button
+                        const statusEdit = document.getElementById(`status-edit-${bookId}`);
+                        const statusView = document.getElementById(`status-view-${bookId}`);
+                        
+                        if (statusEdit && statusView) {
+                            statusView?.classList.add('hidden');
+                            statusEdit.classList.remove('hidden');
+                            
+                            // Focus on the select
+                            const select = statusEdit.querySelector('select');
+                            if (select) select.focus();
+                        } else {
+                            // If no status edit, show notes edit
+                            const notesEdit = document.getElementById(`notes-edit-${bookId}`);
+                            const notesView = document.getElementById(`notes-view-${bookId}`);
+                            
+                            if (notesEdit && notesView) {
+                                notesView.classList.add('hidden');
+                                notesEdit.classList.remove('hidden');
+                                
+                                // Focus on the textarea
+                                const textarea = notesEdit.querySelector('textarea');
+                                if (textarea) textarea.focus();
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Add keyboard shortcuts for saving forms
+            document.addEventListener('keydown', function(e) {
+                // Check if we're in a form within an edit mode element
+                const activeElement = document.activeElement;
+                const editModeParent = activeElement.closest('.edit-mode');
+                
+                if (editModeParent && !editModeParent.classList.contains('hidden')) {
+                    // If Enter key is pressed and not in a textarea (or in textarea with Ctrl/Cmd)
+                    if (e.key === 'Enter' && (activeElement.tagName !== 'TEXTAREA' || e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        const form = activeElement.closest('form');
+                        if (form) form.submit();
+                    }
+                    
+                    // If Escape key is pressed
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        // Find the book ID from the parent element ID
+                        const bookIdMatch = editModeParent.id.match(/([a-z]+)-edit-(\d+)/);
+                        if (bookIdMatch && bookIdMatch.length >= 3) {
+                            const section = bookIdMatch[1];
+                            const bookId = bookIdMatch[2];
+                            toggleEditMode(bookId, section);
+                        }
+                    }
+                }
+            });
+        </script>
+        
+        <!-- Book Details Modal -->
+        <div id="book-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden" onclick="closeModal(event)">
+            <div class="bg-theme-bg1 rounded-lg shadow-xl border border-theme-bg2 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="p-4 border-b border-theme-bg2 flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Book Details</h2>
+                    <button onclick="closeModal()" class="text-theme-fg1 hover:text-theme-accent transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="modal-content" class="p-6">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Modal functions
+            function openModal(bookId) {
+                const modal = document.getElementById('book-modal');
+                const modalContent = document.getElementById('modal-content');
+                
+                // Show loading state
+                modalContent.innerHTML = '<div class="flex justify-center items-center h-40"><svg class="animate-spin h-8 w-8 text-theme-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+                
+                // Show modal
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+                
+                // Load book content via HTMX
+                fetch(`/books/${bookId}/modal`)
+                    .then(response => response.text())
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                    })
+                    .catch(error => {
+                        modalContent.innerHTML = `<div class="text-theme-error">Error loading book details: ${error.message}</div>`;
+                    });
+            }
+            
+            function closeModal(event) {
+                const modal = document.getElementById('book-modal');
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
             }
         </script>
         {% else %}
@@ -111,6 +554,27 @@
             </a>
         </div>
         {% endif %}
+        
+        <!-- Quote of the Day Section -->
+        <div class="mt-8 bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-theme-accent">
+                    <i class="fas fa-feather-alt mr-2"></i>Literary Quote of the Day
+                </h2>
+                <button onclick="refreshQuote()" class="text-theme-fg1 hover:text-theme-accent transition-colors">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div id="quote-container" class="bg-theme-bg2/50 p-4 rounded-md border border-theme-bg2">
+                <div class="flex">
+                    <i class="fas fa-quote-left text-4xl text-theme-accent opacity-25 mr-4"></i>
+                    <div>
+                        <p id="quote-text" class="text-theme-fg italic mb-2">"Books are a uniquely portable magic."</p>
+                        <p id="quote-author" class="text-right text-theme-fg1">— Stephen King</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
     {% endif %}
