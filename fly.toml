@@ -1,14 +1,10 @@
-# fly.toml app configuration file generated for myGoodReads on 2025-03-31T11:29:07-05:00
+# fly.toml app configuration file generated for my-good-reads on 2025-03-31T12:55:41-05:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'myGoodReads'
+app = 'my-good-reads'
 primary_region = 'ord'
-
-[[mounts]]
-source = 'app_data'
-destination = '/app/data'
 
 [build]
 
