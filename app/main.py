@@ -211,7 +211,14 @@ if os.getenv("TESTING") != "true":
 
 
 @app.get("/")
-def home(request: Request, db: Session = Depends(database.get_db)):
+def home(
+    request: Request,
+    title_filter: str | None = None,
+    author_filter: str | None = None,
+    notes_filter: str | None = None,
+    rating_filter: str | None = None,
+    db: Session = Depends(database.get_db)
+):
     # Get current user from token cookie if available
     access_token = request.cookies.get("access_token")
     current_user = None
@@ -224,12 +231,31 @@ def home(request: Request, db: Session = Depends(database.get_db)):
             current_user = auth.get_optional_current_user_sync(access_token, db)
             if current_user:
                 # Get all user's books grouped by status
-                books = (
-                    db.query(models.Book)
-                    .filter(models.Book.user_id == current_user.id)
-                    .order_by(models.Book.updated_at.desc())
-                    .all()
-                )
+                query = db.query(models.Book).filter(models.Book.user_id == current_user.id)
+                
+                # Apply filters if provided
+                if title_filter:
+                    query = query.filter(models.Book.title.ilike(f"%{title_filter}%"))
+                if author_filter:
+                    query = query.filter(models.Book.author.ilike(f"%{author_filter}%"))
+                if notes_filter:
+                    query = query.filter(models.Book.notes.ilike(f"%{notes_filter}%"))
+                if rating_filter:
+                    # Convert to integer or handle None
+                    try:
+                        rating_value = int(rating_filter)
+                        if rating_value == 0:
+                            # Filter for books with no rating
+                            query = query.filter(models.Book.rating.is_(None))
+                        else:
+                            # Filter for books with specific rating
+                            query = query.filter(models.Book.rating == rating_value)
+                    except (ValueError, TypeError):
+                        # Invalid rating filter, ignore
+                        pass
+                
+                # Execute query and order by updated_at
+                books = query.order_by(models.Book.updated_at.desc()).all()
 
                 # Group books by status
                 for status in models.BookStatus:
@@ -249,6 +275,10 @@ def home(request: Request, db: Session = Depends(database.get_db)):
         "user": current_user,
         "books_by_status": books_by_status,
         "book_statuses": list(models.BookStatus),
+        "title_filter": title_filter,
+        "author_filter": author_filter,
+        "notes_filter": notes_filter,
+        "rating_filter": rating_filter,
     }
 
     response = templates.TemplateResponse("index.html", context)

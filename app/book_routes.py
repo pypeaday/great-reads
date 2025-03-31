@@ -28,10 +28,14 @@ def get_templates(request: Request):
 async def list_books(
     request: Request,
     status_filter: str | None = None,
+    title_filter: str | None = None,
+    author_filter: str | None = None,
+    notes_filter: str | None = None,
+    rating_filter: str | None = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    """List all books for the current user."""
+    """List all books for the current user with optional filtering."""
 
     query = db.query(models.Book)
 
@@ -48,6 +52,24 @@ async def list_books(
             raise HTTPException(
                 status_code=400, detail="Invalid status filter"
             ) from None
+            
+    # Apply title filter if provided
+    if title_filter:
+        query = query.filter(models.Book.title.ilike(f"%{title_filter}%"))
+        
+    # Apply author filter if provided
+    if author_filter:
+        query = query.filter(models.Book.author.ilike(f"%{author_filter}%"))
+        
+    # Apply notes filter if provided
+    if notes_filter:
+        query = query.filter(models.Book.notes.ilike(f"%{notes_filter}%"))
+        
+    # Apply rating filter if provided
+    if rating_filter and rating_filter.isdigit():
+        rating = int(rating_filter)
+        if 0 <= rating <= 3:  # Ensure rating is within valid range
+            query = query.filter(models.Book.rating == rating)
 
     books = query.order_by(desc(models.Book.created_at)).all()
 
@@ -59,6 +81,10 @@ async def list_books(
             "current_user": current_user,
             "books": books,
             "status_filter": status_filter,
+            "title_filter": title_filter,
+            "author_filter": author_filter,
+            "notes_filter": notes_filter,
+            "rating_filter": rating_filter,
             "statuses": list(models.BookStatus),
         },
     )

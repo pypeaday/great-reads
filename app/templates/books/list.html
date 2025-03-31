@@ -9,20 +9,69 @@
         </a>
     </div>
 
-    <!-- Status Filter -->
-    <div class="mb-6">
-        <form hx-get="/books" hx-push-url="true" class="flex gap-4">
-            <select name="status_filter" class="bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
-                <option value="">All Statuses</option>
-                {% for status in statuses %}
-                <option value="{{ status.name }}" {% if status_filter == status.name %}selected{% endif %}>
-                    {{ status.name|replace('_', ' ')|title }}
-                </option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="bg-accent1 hover:bg-accent2 text-white px-4 py-2 rounded transition-colors">
-                Filter
-            </button>
+    <!-- Filters -->
+    <div class="mb-6 bg-bg1 p-4 rounded-lg shadow-sm">
+        <h2 class="text-lg font-semibold mb-3 text-text1">Filters</h2>
+        <form hx-get="/books" hx-push-url="true" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Status Filter -->
+                <div>
+                    <label for="status_filter" class="block text-sm font-medium text-text2 mb-1">Status</label>
+                    <select id="status_filter" name="status_filter" class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
+                        <option value="">All Statuses</option>
+                        {% for status in statuses %}
+                        <option value="{{ status.name }}" {% if status_filter == status.name %}selected{% endif %}>
+                            {{ status.name|replace('_', ' ')|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Title Filter -->
+                <div>
+                    <label for="title_filter" class="block text-sm font-medium text-text2 mb-1">Title</label>
+                    <input type="text" id="title_filter" name="title_filter" value="{{ title_filter or '' }}" 
+                           placeholder="Filter by title" 
+                           class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
+                </div>
+                
+                <!-- Author Filter -->
+                <div>
+                    <label for="author_filter" class="block text-sm font-medium text-text2 mb-1">Author</label>
+                    <input type="text" id="author_filter" name="author_filter" value="{{ author_filter or '' }}" 
+                           placeholder="Filter by author" 
+                           class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
+                </div>
+                
+                <!-- Notes Filter -->
+                <div>
+                    <label for="notes_filter" class="block text-sm font-medium text-text2 mb-1">Notes</label>
+                    <input type="text" id="notes_filter" name="notes_filter" value="{{ notes_filter or '' }}" 
+                           placeholder="Search in notes" 
+                           class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
+                </div>
+                
+                <!-- Rating Filter -->
+                <div>
+                    <label for="rating_filter" class="block text-sm font-medium text-text2 mb-1">Rating</label>
+                    <select id="rating_filter" name="rating_filter" class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
+                        <option value="">Any Rating</option>
+                        <option value="0" {% if rating_filter == '0' %}selected{% endif %}>★☆☆</option>
+                        <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★★☆</option>
+                        <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★★</option>
+                        <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex justify-end">
+                <a href="/books" class="bg-bg3 hover:bg-bg4 text-text1 px-4 py-2 rounded transition-colors mr-2">
+                    Clear Filters
+                </a>
+                <button type="submit" class="bg-accent1 hover:bg-accent2 text-white px-4 py-2 rounded transition-colors">
+                    Apply Filters
+                </button>
+            </div>
         </form>
     </div>
 

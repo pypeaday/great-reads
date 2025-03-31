@@ -125,6 +125,69 @@
             </a>
         </div>
         
+        <!-- Search/Filter Panel -->
+        <div class="bg-theme-bg1/80 rounded-lg shadow-md p-3 sm:p-4 border border-theme-bg2/50 mb-4 sm:mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold">Filter Books</h2>
+                <button id="toggle-filters" class="text-sm text-theme-fg1 hover:text-theme-accent">
+                    <i class="fas fa-filter mr-1"></i> <span id="filter-text">{% if title_filter or author_filter or notes_filter or rating_filter %}Hide Filters{% else %}Show Filters{% endif %}</span>
+                </button>
+            </div>
+            
+            <div id="filter-panel" class="{% if title_filter or author_filter or notes_filter or rating_filter %}{% else %}hidden{% endif %}">
+                <form action="/" method="get" class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        <!-- Title Filter -->
+                        <div>
+                            <label for="title_filter" class="block text-sm font-medium text-theme-fg1 mb-1">Title</label>
+                            <input type="text" id="title_filter" name="title_filter" value="{{ title_filter or '' }}" 
+                                placeholder="Filter by title" 
+                                class="w-full bg-theme-bg border border-theme-bg2 rounded px-3 py-2 text-sm">
+                        </div>
+                        
+                        <!-- Author Filter -->
+                        <div>
+                            <label for="author_filter" class="block text-sm font-medium text-theme-fg1 mb-1">Author</label>
+                            <input type="text" id="author_filter" name="author_filter" value="{{ author_filter or '' }}" 
+                                placeholder="Filter by author" 
+                                class="w-full bg-theme-bg border border-theme-bg2 rounded px-3 py-2 text-sm">
+                        </div>
+                        
+                        <!-- Notes Filter -->
+                        <div>
+                            <label for="notes_filter" class="block text-sm font-medium text-theme-fg1 mb-1">Notes</label>
+                            <input type="text" id="notes_filter" name="notes_filter" value="{{ notes_filter or '' }}" 
+                                placeholder="Search in notes" 
+                                class="w-full bg-theme-bg border border-theme-bg2 rounded px-3 py-2 text-sm">
+                        </div>
+                        
+                        <!-- Rating Filter -->
+                        <div>
+                            <label for="rating_filter" class="block text-sm font-medium text-theme-fg1 mb-1">Rating</label>
+                            <select id="rating_filter" name="rating_filter" class="w-full bg-theme-bg border border-theme-bg2 rounded px-3 py-2 text-sm">
+                                <option value="">Any Rating</option>
+                                <option value="0" {% if rating_filter == '0' %}selected{% endif %}>No Rating</option>
+                                <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★☆☆</option>
+                                <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★☆</option>
+                                <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★</option>
+                                <option value="4" {% if rating_filter == '4' %}selected{% endif %}>★★★★</option>
+                                <option value="5" {% if rating_filter == '5' %}selected{% endif %}>★★★★★</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end pt-2">
+                        <a href="/" class="bg-theme-bg2 hover:bg-theme-bg3 text-theme-fg px-3 py-1.5 rounded transition-colors mr-2 text-sm">
+                            Clear Filters
+                        </a>
+                        <button type="submit" class="bg-theme-accent hover:bg-theme-accent_hover text-white px-3 py-1.5 rounded transition-colors text-sm">
+                            Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
         <!-- Book Board with row-based organization -->
         <div class="flex flex-col gap-4 sm:gap-6 pb-4" style="min-height: 60vh;">
             {% for status in book_statuses %}
@@ -295,8 +358,25 @@
                 event.dataTransfer.setData("bookId", bookId);
             }
             
-            // Add event listeners for drag and drop
+            // Toggle filter panel visibility
             document.addEventListener('DOMContentLoaded', function() {
+                const toggleButton = document.getElementById('toggle-filters');
+                const filterPanel = document.getElementById('filter-panel');
+                const filterText = document.getElementById('filter-text');
+                
+                if (toggleButton && filterPanel && filterText) {
+                    toggleButton.addEventListener('click', function() {
+                        if (filterPanel.classList.contains('hidden')) {
+                            filterPanel.classList.remove('hidden');
+                            filterText.textContent = 'Hide Filters';
+                        } else {
+                            filterPanel.classList.add('hidden');
+                            filterText.textContent = 'Show Filters';
+                        }
+                    });
+                }
+                
+                // Add event listeners for drag and drop
                 // Update to use book-row instead of book-column
                 const rows = document.querySelectorAll('.book-row');
                 const bookLists = document.querySelectorAll('.book-list');
@@ -366,7 +446,8 @@
                 
                 // Also allow dropping on the row headers
                 rows.forEach(row => {
-                    const header = row.querySelector('.bg-theme-bg2/90');
+                    // Fix the selector by using getAttribute instead of querySelector with the problematic class
+                    const header = row.querySelector('[class*="bg-theme-bg2"]');
                     if (header) {
                         header.addEventListener('dragover', function(event) {
                             event.preventDefault();
@@ -652,11 +733,23 @@
                 modal.classList.remove('hidden');
                 document.body.classList.add('overflow-hidden');
                 
-                // Load book content via HTMX
+                // Load book content via fetch, ensuring we don't include any filter parameters
                 fetch(`/books/${bookId}/modal`)
                     .then(response => response.text())
                     .then(html => {
                         modalContent.innerHTML = html;
+                        
+                        // Prevent any forms inside the modal from submitting to the main page
+                        const modalForms = modalContent.querySelectorAll('form');
+                        modalForms.forEach(form => {
+                            form.addEventListener('submit', function(e) {
+                                // If the form doesn't have a specific target, prevent it from submitting
+                                if (!form.getAttribute('target') && !form.getAttribute('hx-target')) {
+                                    e.preventDefault();
+                                    console.log('Prevented form submission inside modal');
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         modalContent.innerHTML = `<div class="text-theme-error">Error loading book details: ${error.message}</div>`;
