@@ -1,5 +1,6 @@
-from fastapi import status
 import json
+
+from fastapi import status
 
 
 def test_admin_dashboard_access(client, admin_headers):

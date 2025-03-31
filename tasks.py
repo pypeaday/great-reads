@@ -22,7 +22,7 @@ def post_generation(answers):
 
     # Update the .env file with the JWT secret and other settings
     env_content = []
-    with open(env_file, "r") as f:
+    with open(env_file) as f:
         for line in f:
             if line.startswith("JWT_SECRET_KEY="):
                 line = f"JWT_SECRET_KEY={jwt_secret}\n"

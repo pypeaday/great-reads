@@ -1,11 +1,13 @@
-from typing import Optional, Dict, Any, Union
-from fastapi.responses import Response, HTMLResponse
+from typing import Any
+
+from fastapi.responses import HTMLResponse
+from fastapi.responses import Response
 
 
 def trigger_client_event(
-    response: Union[Response, HTMLResponse],
+    response: Response | HTMLResponse,
     event_name: str,
-    detail: Optional[Dict[str, Any]] = None,
+    detail: dict[str, Any] | None = None,
 ) -> None:
     """
     Trigger a client-side event using HX-Trigger.
@@ -27,7 +29,7 @@ def trigger_client_event(
     response.headers["HX-Trigger"] = str(trigger_value).replace("'", '"')
 
 
-def set_client_redirect(response: Union[Response, HTMLResponse], url: str) -> None:
+def set_client_redirect(response: Response | HTMLResponse, url: str) -> None:
     """
     Redirect the client to a new URL using HX-Redirect.
 
@@ -42,7 +44,7 @@ def set_client_redirect(response: Union[Response, HTMLResponse], url: str) -> No
     response.headers["HX-Redirect"] = url
 
 
-def set_client_refresh(response: Union[Response, HTMLResponse]) -> None:
+def set_client_refresh(response: Response | HTMLResponse) -> None:
     """
     Refresh the client page using HX-Refresh.
 
@@ -57,7 +59,7 @@ def set_client_refresh(response: Union[Response, HTMLResponse]) -> None:
 
 
 def set_client_retarget(
-    response: Union[Response, HTMLResponse], css_selector: str
+    response: Response | HTMLResponse, css_selector: str
 ) -> None:
     """
     Change the target of an HTMX request using HX-Retarget.
@@ -73,7 +75,7 @@ def set_client_retarget(
     response.headers["HX-Retarget"] = css_selector
 
 
-def set_client_reswap(response: Union[Response, HTMLResponse], swap_style: str) -> None:
+def set_client_reswap(response: Response | HTMLResponse, swap_style: str) -> None:
     """
     Change how the response content is swapped in using HX-Reswap.
 

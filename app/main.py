@@ -1,26 +1,28 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Form, Cookie
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from typing import Optional
-from pydantic import BaseModel
-import os
 import json
+import os
+
 from dotenv import load_dotenv
+from fastapi import Depends
+from fastapi import FastAPI
+from fastapi import Form
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 # Base imports
-from . import (
-    models,
-    database,
-    themes,
-    auth,
-    auth_routes,
-    roles,
-    jinja_filters,
-    book_routes,
-)
+from . import auth
+from . import auth_routes
+from . import book_routes
+from . import database
+from . import jinja_filters
+from . import models
+from . import roles
+from . import themes
 
 # Conditional imports based on features
 try:
@@ -30,7 +32,8 @@ try:
 except ImportError:
     ADMIN_ENABLED = False
 
-from .auth import get_optional_current_user, get_optional_current_user_sync
+from .auth import get_optional_current_user
+from .auth import get_optional_current_user_sync
 
 # Load environment variables
 load_dotenv()
@@ -232,7 +235,7 @@ def home(
             if current_user:
                 # Get all user's books grouped by status
                 query = db.query(models.Book).filter(models.Book.user_id == current_user.id)
-                
+
                 # Apply filters if provided
                 if title_filter:
                     query = query.filter(models.Book.title.ilike(f"%{title_filter}%"))
@@ -253,7 +256,7 @@ def home(
                     except (ValueError, TypeError):
                         # Invalid rating filter, ignore
                         pass
-                
+
                 # Execute query and order by updated_at
                 books = query.order_by(models.Book.updated_at.desc()).all()
 
@@ -355,7 +358,7 @@ def update_theme(
         """,
         status_code=200,
     )
-    
+
     # Set theme cookie with long expiration
     set_theme_cookie(response, theme_name)
 

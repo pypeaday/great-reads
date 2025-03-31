@@ -4,21 +4,20 @@ Script to populate the book tracking app with random books.
 This script adds 20 random books with various statuses and ratings to the admin account.
 """
 
+import os
 import random
 import sys
-import os
-from datetime import datetime, timedelta
-import requests
-from sqlalchemy.orm import Session
-from dotenv import load_dotenv
+from datetime import datetime
+from datetime import timedelta
 
 # Add the current directory to the path so we can import the app modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import app modules
-from app.models import Book, BookStatus, User
-from app.database import SessionLocal
 from app.auth import authenticate_user
+from app.database import SessionLocal
+from app.models import Book
+from app.models import BookStatus
 
 # Sample book data
 SAMPLE_BOOKS = [
@@ -81,12 +80,12 @@ def login_admin():
         # Authenticate admin user
         admin_email = "admin@example.com"
         admin_password = "admin123"
-        
+
         user = authenticate_user(db, admin_email, admin_password)
         if not user:
             print("Failed to authenticate admin user. Check credentials.")
             sys.exit(1)
-        
+
         print(f"Successfully authenticated as admin: {user.email}")
         return user
     finally:
@@ -98,39 +97,39 @@ def create_random_books(user_id, num_books=20):
     try:
         # Get a random selection of books
         selected_books = random.sample(SAMPLE_BOOKS, min(num_books, len(SAMPLE_BOOKS)))
-        
+
         # Current time for reference
         now = datetime.utcnow()
-        
+
         # Create and add books
         for i, book_data in enumerate(selected_books):
             # Randomly select a status
             status = random.choice(list(BookStatus))
-            
+
             # Set appropriate dates based on status
             start_date = None
             completion_date = None
-            
+
             if status in [BookStatus.READING, BookStatus.COMPLETED, BookStatus.DNF, BookStatus.ON_HOLD]:
                 # For books that have been started, set a start date in the past
                 days_ago = random.randint(10, 365)
                 start_date = now - timedelta(days=days_ago)
-            
+
             if status in [BookStatus.COMPLETED, BookStatus.DNF]:
                 # For completed or DNF books, set a completion date after the start date
                 if start_date:
                     days_to_complete = random.randint(1, min(days_ago, 60))
                     completion_date = start_date + timedelta(days=days_to_complete)
-            
+
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
                 # 0-3 rating for completed books
                 rating = random.randint(0, 3)
-            
+
             # Random notes
             notes = random.choice(SAMPLE_NOTES) if random.random() > 0.3 else None
-            
+
             # Create the book
             book = Book(
                 title=book_data["title"],
@@ -144,13 +143,13 @@ def create_random_books(user_id, num_books=20):
                 created_at=now - timedelta(days=random.randint(1, 400)),
                 updated_at=now - timedelta(days=random.randint(0, 30))
             )
-            
+
             db.add(book)
             print(f"Added book: {book.title} by {book.author} (Status: {book.status.value})")
-        
+
         db.commit()
         print(f"\nSuccessfully added {num_books} books to the database!")
-        
+
     except Exception as e:
         db.rollback()
         print(f"Error adding books: {e}")
@@ -161,13 +160,13 @@ def create_random_books(user_id, num_books=20):
 def main():
     """Main function to populate the database with random books"""
     print("Populating book tracking app with random books...")
-    
+
     # Login as admin
     admin_user = login_admin()
-    
+
     # Create random books for the admin user
     create_random_books(admin_user.id, 20)
-    
+
     print("\nDone! You can now view the books in the app.")
 
 if __name__ == "__main__":

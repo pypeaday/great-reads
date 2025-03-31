@@ -1,9 +1,10 @@
 import json
-from typing import Any, Dict
+from typing import Any
+
 from fastapi.templating import Jinja2Templates
 
 
-def fromjson(value: str) -> Dict[str, Any]:
+def fromjson(value: str) -> dict[str, Any]:
     """Convert a JSON string to a Python dictionary."""
     try:
         return json.loads(value)

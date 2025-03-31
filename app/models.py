@@ -1,16 +1,15 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Text,
-    DateTime,
-    ForeignKey,
-    Boolean,
-    Enum as SQLEnum,
-)
+import enum
+
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-import enum
 
 Base = declarative_base()
 

@@ -6,24 +6,30 @@ Create Date: 2025-03-31 09:42:37.000000
 
 """
 
-from typing import Sequence, Union
+import enum
 import random
-from datetime import datetime, timedelta
+from collections.abc import Sequence
+from datetime import datetime
+from datetime import timedelta
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.orm import Session
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Enum as SQLEnum
-import enum
 from passlib.context import CryptContext
-
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 
 # revision identifiers, used by Alembic.
 revision: str = "4f8e9c2d7a5b"
-down_revision: Union[str, None] = "26becd0618c3"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "26becd0618c3"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -137,7 +143,7 @@ def upgrade() -> None:
     # Get a database connection
     bind = op.get_bind()
     session = Session(bind=bind)
-    
+
     try:
         # Ensure the user role exists
         user_role = session.query(Role).filter(Role.name == "user").first()
@@ -152,11 +158,11 @@ def upgrade() -> None:
             session.add(user_role)
             session.flush()
             print("Created 'user' role")
-        
+
         # Check if demo user already exists
         demo_email = "demo@example.com"
         demo_user = session.query(User).filter(User.email == demo_email).first()
-        
+
         # If demo user exists, delete all their books to reset
         if demo_user:
             print(f"Demo user exists: {demo_email} - Resetting books")
@@ -167,7 +173,7 @@ def upgrade() -> None:
             session.flush()
             print(f"Deleted {book_count} existing books for demo user")
         else:
-        
+
             # Create new demo user
             demo_user = User(
                 email=demo_email,
@@ -178,46 +184,46 @@ def upgrade() -> None:
                 created_at=datetime.utcnow(),
                 theme_preference="gruvbox-dark"
             )
-            
+
             session.add(demo_user)
             session.flush()  # Flush to get the user ID
-            
+
             print(f"Created demo user: {demo_user.email}")
-        
+
         # Current time for reference
         now = datetime.utcnow()
-        
+
         # Add 30 random books to the demo user
         selected_books = random.sample(SAMPLE_BOOKS, 30)
-        
+
         for book_data in selected_books:
             # Randomly select a status
             status = random.choice(list(BookStatus))
-            
+
             # Set appropriate dates based on status
             start_date = None
             completion_date = None
-            
+
             if status in [BookStatus.READING, BookStatus.COMPLETED, BookStatus.DNF, BookStatus.ON_HOLD]:
                 # For books that have been started, set a start date in the past
                 days_ago = random.randint(10, 365)
                 start_date = now - timedelta(days=days_ago)
-            
+
             if status in [BookStatus.COMPLETED, BookStatus.DNF]:
                 # For completed or DNF books, set a completion date after the start date
                 if start_date:
                     days_to_complete = random.randint(1, min(days_ago, 60))
                     completion_date = start_date + timedelta(days=days_to_complete)
-            
+
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
                 # 0-3 rating for completed books
                 rating = random.randint(0, 3)
-            
+
             # Random notes
             notes = random.choice(SAMPLE_NOTES) if random.random() > 0.3 else None
-            
+
             # Create the book
             book = Book(
                 title=book_data["title"],
@@ -231,14 +237,14 @@ def upgrade() -> None:
                 created_at=now - timedelta(days=random.randint(1, 400)),
                 updated_at=now - timedelta(days=random.randint(0, 30))
             )
-            
+
             session.add(book)
             print(f"Added book: {book.title} by {book.author}")
-        
+
         # Commit all changes
         session.commit()
         print("Successfully added demo user with 30 sample books")
-        
+
     except Exception as e:
         session.rollback()
         print(f"Error in migration: {e}")
@@ -251,25 +257,25 @@ def downgrade() -> None:
     # Get a database connection
     bind = op.get_bind()
     session = Session(bind=bind)
-    
+
     try:
         # Find the demo user
         demo_email = "demo@example.com"
         demo_user = session.query(User).filter(User.email == demo_email).first()
-        
+
         if demo_user:
             # Delete all books associated with the demo user
             books = session.query(Book).filter(Book.user_id == demo_user.id).all()
             for book in books:
                 session.delete(book)
-            
+
             # Delete the demo user
             session.delete(demo_user)
             session.commit()
             print(f"Removed demo user and associated books: {demo_email}")
         else:
             print(f"Demo user not found: {demo_email}")
-        
+
     except Exception as e:
         session.rollback()
         print(f"Error in migration downgrade: {e}")

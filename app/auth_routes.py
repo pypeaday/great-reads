@@ -1,12 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, Body
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from typing import Optional
 import logging
+from datetime import datetime
+from datetime import timedelta
 
-from . import database, models, schemas, auth, themes
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Form
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import status
+from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
+from . import auth
+from . import database
+from . import models
+from . import schemas
+from . import themes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

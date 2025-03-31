@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.models import User, Role
+
+from app.auth import get_password_hash
+from app.auth import verify_password
 from app.database import SQLALCHEMY_DATABASE_URL
-from app.auth import get_password_hash, verify_password
+from app.models import Role
+from app.models import User
 
 # Create engine and session
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

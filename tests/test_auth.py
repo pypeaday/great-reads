@@ -138,8 +138,9 @@ def test_access_protected_route_with_invalid_token(client):
 
 def test_access_protected_route_with_expired_token(client):
     """Test accessing protected route with expired token."""
-    from app.auth import create_access_token
     from datetime import timedelta
+
+    from app.auth import create_access_token
 
     # Create token that expired 1 hour ago
     expired_token = create_access_token(

@@ -1,6 +1,8 @@
-from datetime import datetime
 import json
+from datetime import datetime
+
 from sqlalchemy.orm import Session
+
 from . import models
 
 DEFAULT_ROLES = {
@@ -100,7 +102,9 @@ def has_permission(user: models.User, permission: str) -> bool:
 
 def requires_permission(permission: str):
     """Decorator to check if a user has a specific permission."""
-    from fastapi import HTTPException, Depends
+    from fastapi import Depends
+    from fastapi import HTTPException
+
     from .auth import get_current_active_user
 
     def decorator(func):

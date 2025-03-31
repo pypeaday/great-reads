@@ -1,6 +1,6 @@
 """Theme management for the book tracking app."""
 from dataclasses import dataclass
-from typing import Dict, Optional
+
 
 @dataclass
 class ThemeColors:
@@ -16,7 +16,7 @@ class ThemeColors:
     error: str  # Error/negative color
 
 # Built-in themes
-THEMES: Dict[str, ThemeColors] = {
+THEMES: dict[str, ThemeColors] = {
     "gruvbox-dark": ThemeColors(
         bg="#282828",  # Background
         bg1="#3c3836",  # Secondary Background
@@ -85,6 +85,6 @@ THEMES: Dict[str, ThemeColors] = {
     )
 }
 
-def get_theme(name: str) -> Optional[ThemeColors]:
+def get_theme(name: str) -> ThemeColors | None:
     """Get a theme by name."""
     return THEMES.get(name)

@@ -2,13 +2,20 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Form
+from fastapi import HTTPException
+from fastapi import Request
 from fastapi import status as http_status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from . import auth, models, roles
+from . import auth
+from . import models
+from . import roles
 from .database import get_db
 from .roles import requires_permission
 
@@ -52,19 +59,19 @@ async def list_books(
             raise HTTPException(
                 status_code=400, detail="Invalid status filter"
             ) from None
-            
+
     # Apply title filter if provided
     if title_filter:
         query = query.filter(models.Book.title.ilike(f"%{title_filter}%"))
-        
+
     # Apply author filter if provided
     if author_filter:
         query = query.filter(models.Book.author.ilike(f"%{author_filter}%"))
-        
+
     # Apply notes filter if provided
     if notes_filter:
         query = query.filter(models.Book.notes.ilike(f"%{notes_filter}%"))
-        
+
     # Apply rating filter if provided
     if rating_filter and rating_filter.isdigit():
         rating = int(rating_filter)

@@ -1,18 +1,21 @@
+from datetime import datetime
+
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import Request
+from fastapi.templating import Jinja2Templates
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from datetime import datetime
 
-from fastapi.templating import Jinja2Templates
-from app.main import app
+from app.auth import create_access_token
+from app.auth import get_password_hash
 from app.database import get_db
-from app.models import Base, User  # Import Base from models and all models
-from app.auth import create_access_token, get_password_hash
-from app.roles import ensure_default_roles_exist
 from app.jinja_filters import register_filters
+from app.main import app
+from app.models import Base  # Import Base from models and all models
+from app.models import User  # Import Base from models and all models
+from app.roles import ensure_default_roles_exist
 
 # Create and configure test-specific templates
 test_templates = Jinja2Templates(directory="app/templates")

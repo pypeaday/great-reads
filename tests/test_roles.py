@@ -1,5 +1,7 @@
-from fastapi import status
 import json
+
+from fastapi import status
+
 from app.roles import has_permission
 
 
@@ -195,8 +197,10 @@ def test_custom_role_permissions(client, admin_headers, db):
 
 def test_invalid_role_permissions(db):
     """Test handling of invalid role permissions JSON."""
-    from app.models import Role, User
     from datetime import datetime
+
+    from app.models import Role
+    from app.models import User
 
     # Create role with invalid JSON
     role = Role(

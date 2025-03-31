@@ -74,6 +74,7 @@ ignore = []
 [tool.ruff.isort]
 known-first-party = ["app"]
 combine-as-imports = true
+force-single-line = true
 
 [tool.mypy]
 python_version = "3.12"

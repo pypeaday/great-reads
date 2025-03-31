@@ -1,13 +1,19 @@
-from datetime import datetime, timedelta
-from typing import Optional
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 import logging
+from datetime import datetime
+from datetime import timedelta
 
-from . import models, database
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from jose import jwt
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from . import database
+from . import models
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # JWT configuration
 import os
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -65,7 +72,7 @@ def authenticate_user(db: Session, email: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Create a JWT access token."""
     to_encode = data.copy()
     if expires_delta:

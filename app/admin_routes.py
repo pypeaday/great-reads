@@ -1,14 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
-from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from datetime import datetime
 import json
+from datetime import datetime
 
-from . import models, auth
-from .roles import requires_permission
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Form
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import status
+from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+
+from . import auth
+from . import models
 from .auth import get_password_hash
 from .database import get_db
-
+from .roles import requires_permission
 
 router = APIRouter(
     prefix="/admin",
@@ -131,18 +138,18 @@ async def create_user(
     """Create a new user."""
     # Get form data
     form_data = await request.form()
-    
+
     # Extract form fields
     email = form_data.get("email")
     password = form_data.get("password")
     name = form_data.get("name")
     role = form_data.get("role", "user")
     is_active = form_data.get("is_active")
-    
+
     # Validate required fields
     if not email or not password:
         raise HTTPException(status_code=422, detail="Email and password are required")
-    
+
     # Check if email already exists
     if db.query(models.User).filter(models.User.email == email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -181,17 +188,17 @@ async def update_user(
     """Update a user's information."""
     # Get form data
     form_data = await request.form()
-    
+
     # Extract form fields
     email = form_data.get("email")
     name = form_data.get("name")
     role = form_data.get("role", "user")
     is_active = form_data.get("is_active")
-    
+
     # Validate required fields
     if not email:
         raise HTTPException(status_code=422, detail="Email is required")
-    
+
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
