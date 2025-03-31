@@ -3,13 +3,7 @@ set -e
 
 export VIRTUAL_ENV=/opt/venv
 
-# # Set up migrations if needed
-# echo "Setting up migrations..."
-# python scripts/setup_migrations.py
-
-# # Run migrations
-# echo "Running migrations..."
-# python scripts/run_migrations.py
+alembic upgrade head
 
 # Start the application
 echo "Starting web server..."
