@@ -215,16 +215,20 @@ async def login(
 
     # Set cookie max_age to match token expiration
     max_age = 30 * 24 * 60 * 60 if remember_me else 1800  # 30 days or 30 minutes
-
-    logger.info("Setting access_token cookie")
+    
+    import os
+    # Get environment variables for cookie settings
+    cookie_secure = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    cookie_samesite = os.getenv("COOKIE_SAMESITE", "strict")
+    
+    logger.info(f"Setting access_token cookie (secure: {cookie_secure}, samesite: {cookie_samesite})")
     response.set_cookie(
         key="access_token",
         value=access_token,  # Store just the token, middleware will add 'Bearer'
         httponly=True,
         max_age=max_age,
-        samesite="strict",  # More secure than lax
-        secure=False,  # Set to True in production with HTTPS
-        domain="localhost",  # Ensure cookie is sent for all paths
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/",  # Ensure cookie is sent for all paths
     )
     response.headers["HX-Trigger"] = (
