@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for lit-lighthouse on 2025-03-31T11:29:07-05:00
+# fly.toml app configuration file generated for myGoodReads on 2025-03-31T11:29:07-05:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'lit-lighthouse'
+app = 'myGoodReads'
 primary_region = 'ord'
 
 [[mounts]]

@@ -38,7 +38,7 @@ from .auth import get_optional_current_user_sync
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="LitLighthouse")
+app = FastAPI(title="myGoodReads")
 templates = Jinja2Templates(directory="app/templates")
 
 # Store templates in app state for access in routes
