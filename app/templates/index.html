@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-6 text-theme-fg">
+<div class="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 text-theme-fg">
     <style>
         /* Custom styles for the dashboard */
         .stat-card {
@@ -15,9 +15,28 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            flex-shrink: 0; /* Prevent cards from shrinking in flex layouts */
         }
         .book-card:hover {
             transform: translateY(-5px);
+        }
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .book-card {
+                min-height: 120px; /* Ensure minimum height on mobile */
+                width: 100% !important; /* Force full width on smallest screens */
+                margin-bottom: 8px;
+            }
+        }
+        @media (min-width: 641px) and (max-width: 768px) {
+            .book-card {
+                width: calc(50% - 8px) !important; /* Two cards per row on small screens */
+            }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .book-card {
+                width: calc(33.333% - 12px) !important; /* Three cards per row on medium screens */
+            }
         }
         .book-card::after {
             content: '';
@@ -53,6 +72,22 @@
         .animate-pulse {
             animation: pulse 2s infinite;
         }
+        
+        /* Responsive layout adjustments */
+        @media (max-width: 768px) {
+            .book-row {
+                margin-bottom: 0.75rem;
+            }
+            #book-list-container {
+                padding-bottom: 1rem;
+            }
+            /* Improve mobile layout */
+            .book-list-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+        }
     </style>
     {% if not user %}
     <!-- Welcome screen for non-logged in users -->
@@ -61,7 +96,7 @@
             <h1 class="text-4xl font-bold mb-4 text-theme-accent">Your Reading Journey Awaits</h1>
             <p class="text-xl text-theme-fg1 max-w-2xl mx-auto">Track your reading adventures, discover new worlds, and connect with your literary self.</p>
         </div>
-        <div class="flex flex-col sm:flex-row gap-4 mt-6">
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
             <a href="/login" class="px-8 py-4 bg-theme-accent text-white rounded-lg hover:opacity-90 transition-all transform hover:-translate-y-1 text-lg font-medium shadow-lg">
                 <i class="fas fa-book-open mr-2"></i>Begin Your Journey
             </a>
@@ -71,18 +106,18 @@
         </div>
     </div>
     {% else %}
-    <div class="mb-6">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+    <div class="mb-4 sm:mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-8 gap-3 sm:gap-4">
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold flex items-center">
-                    <span class="bg-theme-accent/20 text-theme-accent p-2 rounded-lg mr-3">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold flex items-center">
+                    <span class="bg-theme-accent/20 text-theme-accent p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3">
                         <i class="fas fa-book-reader"></i>
                     </span>
                     {{ user.email.split('@')[0] }}'s Reading Dashboard
                 </h1>
-                <p class="text-theme-fg2 mt-1 ml-12">Track, organize, and discover your reading journey</p>
+                <p class="text-theme-fg2 mt-1 ml-8 sm:ml-12 text-sm sm:text-base">Track, organize, and discover your reading journey</p>
             </div>
-            <a href="/books/new" class="px-5 py-2.5 bg-theme-accent text-white rounded-lg hover:bg-theme-accent/90 transition-all duration-300 transform hover:-translate-y-1 flex items-center shadow-lg group">
+            <a href="/books/new" class="px-4 sm:px-5 py-2 sm:py-2.5 bg-theme-accent text-white rounded-lg hover:bg-theme-accent/90 transition-all duration-300 transform hover:-translate-y-1 flex items-center shadow-lg group mt-2 sm:mt-0">
                 <span class="bg-white/20 rounded-full p-1 mr-2 group-hover:scale-110 transition-transform">
                     <i class="fas fa-plus"></i>
                 </span>
@@ -91,26 +126,26 @@
         </div>
         
         <!-- Book Board with row-based organization -->
-        <div class="flex flex-col gap-6 pb-4" style="min-height: 70vh;">
+        <div class="flex flex-col gap-4 sm:gap-6 pb-4" style="min-height: 60vh;">
             {% for status in book_statuses %}
             {% set count = books_by_status.get(status, [])|length %}
             <div class="book-row bg-theme-bg1/80 rounded-xl shadow-lg border border-theme-bg2/50 overflow-hidden" data-status="{{ status.name }}">
                 <!-- Row Header with Stats -->
-                <div class="px-4 py-3 bg-theme-bg2/90 z-10 shadow-sm border-b border-theme-bg2/50">
-                    <div class="flex items-center justify-between h-11">
+                <div class="px-3 sm:px-4 py-2 sm:py-3 bg-theme-bg2/90 z-10 shadow-sm border-b border-theme-bg2/50">
+                    <div class="flex items-center justify-between h-10 sm:h-11">
                         <div class="flex items-center">
-                            <div class="w-3.5 h-3.5 rounded-full mr-2.5
+                            <div class="w-3 sm:w-3.5 h-3 sm:h-3.5 rounded-full mr-2 sm:mr-2.5
                                 {% if status.name == 'TO_READ' %}bg-blue-400
                                 {% elif status.name == 'READING' %}bg-yellow-400
                                 {% elif status.name == 'COMPLETED' %}bg-green-400
                                 {% elif status.name == 'ON_HOLD' %}bg-purple-400
                                 {% elif status.name == 'DNF' %}bg-red-400
                                 {% endif %}"></div>
-                            <h2 class="text-base font-semibold whitespace-nowrap tracking-wide">{{ status.value }}</h2>
+                            <h2 class="text-sm sm:text-base font-semibold whitespace-nowrap tracking-wide">{{ status.value }}</h2>
                         </div>
                         <div class="flex items-center space-x-2">
                             <!-- Status Icon -->
-                            <span class="text-lg
+                            <span class="text-base sm:text-lg
                                 {% if status.name == 'TO_READ' %}text-blue-400
                                 {% elif status.name == 'READING' %}text-yellow-400
                                 {% elif status.name == 'COMPLETED' %}text-green-400
@@ -125,7 +160,7 @@
                                 {% endif %}
                             </span>
                             <!-- Count Badge -->
-                            <span class="flex items-center justify-center min-w-[26px] h-6 bg-theme-bg rounded-full text-xs font-medium border
+                            <span class="flex items-center justify-center min-w-[24px] sm:min-w-[26px] h-5 sm:h-6 bg-theme-bg rounded-full text-xs font-medium border
                                 {% if status.name == 'TO_READ' %}text-blue-400 border-blue-400/30
                                 {% elif status.name == 'READING' %}text-yellow-400 border-yellow-400/30
                                 {% elif status.name == 'COMPLETED' %}text-green-400 border-green-400/30
@@ -140,19 +175,19 @@
                 
                 <!-- Book Cards Container -->
                 <div class="relative group">
-                    <!-- Scroll indicators -->
-                    <div class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', -300)">
+                    <!-- Scroll indicators - visible on larger screens, hidden on mobile where touch scrolling is natural -->
+                    <div class="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', -300)">
                         <i class="fas fa-chevron-left"></i>
                     </div>
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', 300)">
+                    <div class="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', 300)">
                         <i class="fas fa-chevron-right"></i>
                     </div>
                     
-                    <div class="p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-theme-bg2 scrollbar-track-transparent" id="book-list-{{ status.name }}">
-                        <div class="flex gap-4 pb-2 snap-x">
+                    <div class="p-2 sm:p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-theme-bg2 scrollbar-track-transparent book-list" id="book-list-{{ status.name }}" data-status="{{ status.name }}">
+                        <div class="flex flex-wrap md:flex-nowrap gap-3 sm:gap-4 pb-2 snap-x book-list-container">
                     {% if status in books_by_status %}
                     {% for book in books_by_status[status] %}
-                    <div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30 min-w-[240px] max-w-[240px] snap-start" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
+                    <div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30 w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:min-w-[240px] lg:max-w-[240px] snap-start cursor-grab active:cursor-grabbing" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
                         <!-- Card Header with label -->
                         <div class="px-3 pt-3 pb-1 flex items-center justify-between">
                             <div class="flex items-center space-x-1.5">
@@ -244,7 +279,14 @@
             function scrollContainer(containerId, scrollAmount) {
                 const container = document.getElementById(containerId);
                 if (container) {
-                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                    // On mobile, we'll scroll less distance for better control
+                    const isMobile = window.innerWidth < 768;
+                    const adjustedAmount = isMobile ? scrollAmount / 2 : scrollAmount;
+                    
+                    container.scrollBy({
+                        left: adjustedAmount,
+                        behavior: 'smooth'
+                    });
                 }
             }
             
@@ -255,21 +297,37 @@
             
             // Add event listeners for drag and drop
             document.addEventListener('DOMContentLoaded', function() {
-                const columns = document.querySelectorAll('.book-column');
+                // Update to use book-row instead of book-column
+                const rows = document.querySelectorAll('.book-row');
+                const bookLists = document.querySelectorAll('.book-list');
                 
-                columns.forEach(column => {
-                    column.addEventListener('dragover', function(event) {
-                        event.preventDefault();
-                        this.classList.add('bg-theme-bg1');
+                // Add visual cue for dragging
+                const bookCards = document.querySelectorAll('.book-card');
+                bookCards.forEach(card => {
+                    card.addEventListener('dragstart', function() {
+                        this.classList.add('being-dragged');
+                        setTimeout(() => this.classList.add('opacity-50'), 0);
                     });
                     
-                    column.addEventListener('dragleave', function() {
-                        this.classList.remove('bg-theme-bg1');
+                    card.addEventListener('dragend', function() {
+                        this.classList.remove('being-dragged', 'opacity-50');
+                    });
+                });
+                
+                // Setup drop zones
+                bookLists.forEach(list => {
+                    list.addEventListener('dragover', function(event) {
+                        event.preventDefault();
+                        this.classList.add('drag-over', 'bg-theme-bg2/50');
                     });
                     
-                    column.addEventListener('drop', function(event) {
+                    list.addEventListener('dragleave', function() {
+                        this.classList.remove('drag-over', 'bg-theme-bg2/50');
+                    });
+                    
+                    list.addEventListener('drop', function(event) {
                         event.preventDefault();
-                        this.classList.remove('bg-theme-bg1');
+                        this.classList.remove('drag-over', 'bg-theme-bg2/50');
                         
                         const bookId = event.dataTransfer.getData("bookId");
                         const targetStatus = this.dataset.status;
@@ -285,12 +343,17 @@
                             })
                         }).then(response => {
                             if (response.ok) {
-                                // Move the card to the new column
+                                // Move the card to the new list
                                 const bookCard = document.getElementById(`book-${bookId}`);
-                                const targetContainer = document.getElementById(`book-list-${targetStatus}`);
+                                const targetContainer = document.querySelector(`#book-list-${targetStatus} .book-list-container`);
                                 
                                 if (bookCard && targetContainer) {
+                                    // Add animation for smooth transition
+                                    bookCard.style.transition = 'all 0.3s ease';
                                     targetContainer.prepend(bookCard);
+                                    
+                                    // Update the count badges
+                                    updateStatusCounts();
                                 }
                             } else {
                                 alert('Failed to update book status');
@@ -300,7 +363,69 @@
                         });
                     });
                 });
+                
+                // Also allow dropping on the row headers
+                rows.forEach(row => {
+                    const header = row.querySelector('.bg-theme-bg2/90');
+                    if (header) {
+                        header.addEventListener('dragover', function(event) {
+                            event.preventDefault();
+                            this.classList.add('bg-theme-bg2');
+                        });
+                        
+                        header.addEventListener('dragleave', function() {
+                            this.classList.remove('bg-theme-bg2');
+                        });
+                        
+                        header.addEventListener('drop', function(event) {
+                            event.preventDefault();
+                            this.classList.remove('bg-theme-bg2');
+                            
+                            const bookId = event.dataTransfer.getData("bookId");
+                            const targetStatus = row.dataset.status;
+                            
+                            // Update book status via API
+                            fetch(`/books/${bookId}/status`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    status: targetStatus
+                                })
+                            }).then(response => {
+                                if (response.ok) {
+                                    // Move the card to the new list
+                                    const bookCard = document.getElementById(`book-${bookId}`);
+                                    const targetContainer = document.querySelector(`#book-list-${targetStatus} .book-list-container`);
+                                    
+                                    if (bookCard && targetContainer) {
+                                        targetContainer.prepend(bookCard);
+                                        updateStatusCounts();
+                                    }
+                                } else {
+                                    alert('Failed to update book status');
+                                }
+                            }).catch(error => {
+                                console.error('Error:', error);
+                            });
+                        });
+                    }
+                });
             });
+            
+            // Function to update the count badges
+            function updateStatusCounts() {
+                const statuses = ['TO_READ', 'READING', 'COMPLETED', 'ON_HOLD', 'DNF'];
+                statuses.forEach(status => {
+                    const container = document.querySelector(`#book-list-${status} .book-list-container`);
+                    const countBadge = document.querySelector(`.book-row[data-status="${status}"] .min-w-\\[24px\\]`);
+                    if (container && countBadge) {
+                        const count = container.querySelectorAll('.book-card').length;
+                        countBadge.textContent = count;
+                    }
+                });
+            }
         </script>
 
 
@@ -546,8 +671,8 @@
         </script>
         
         {% if not books_by_status %}
-        <div class="bg-theme-bg1 rounded-lg shadow-lg p-6 border border-theme-bg2 text-center mt-8">
-            <p class="text-theme-fg1 mb-4">You haven't added any books yet.</p>
+        <div class="bg-theme-bg1 rounded-lg shadow-lg p-4 sm:p-6 border border-theme-bg2 text-center mt-6 sm:mt-8">
+            <p class="text-theme-fg1 mb-3 sm:mb-4 text-sm sm:text-base">You haven't added any books yet.</p>
             <a href="/books/new" class="px-4 py-2 bg-theme-accent text-white rounded-md hover:opacity-90 transition-opacity">
                 <i class="fas fa-plus mr-2"></i>Add Your First Book
             </a>
