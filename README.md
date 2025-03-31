@@ -1,4 +1,4 @@
-# myGoodReads
+# greatReads
 
 A book tracking application that helps readers never lose track of their books.
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "book-tracker"
 version = "0.1.0"
-description = "myGoodReads - A simple book tracking app"
+description = "greatReads - A simple book tracking app"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
