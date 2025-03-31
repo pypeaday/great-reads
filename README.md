@@ -116,6 +116,15 @@ The application includes a complete authentication system:
 - Role-based authorization (user/admin)
 - Automatic admin user creation
 
+### Demo User
+
+A demo user with sample books is automatically created when you run database migrations. You can log in with these credentials to explore the application:
+
+- **Email**: demo@example.com
+- **Password**: demo
+
+The demo user's data is automatically reset whenever migrations are run, ensuring a clean demonstration environment.
+
 ## HTMX Features
 
 The application demonstrates various HTMX capabilities:
