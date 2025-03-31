@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#282828" />
+  
+  <!-- Decorative elements - book stack -->
+  <rect x="120" y="165" width="200" height="300" rx="5" fill="#504945" />
+  <rect x="150" y="135" width="200" height="300" rx="5" fill="#665c54" />
+  <rect x="180" y="105" width="200" height="300" rx="5" fill="#7c6f64" />
+  
+  <!-- Logo and text container -->
+  <g transform="translate(450, 315)" text-anchor="middle">
+    <!-- Logo text -->
+    <text font-family="Georgia, serif" font-size="100" fill="#ebdbb2">
+      <tspan x="0" y="0">great</tspan>
+      <tspan x="220" y="0" fill="#fe8019">Reads</tspan>
+    </text>
+    
+    <!-- Tagline -->
+    <text font-family="system-ui, sans-serif" font-size="36" fill="#a89984" x="110" y="60">
+      Track your reading journey
+    </text>
+  </g>
+  
+  <!-- Book icon -->
+  <g transform="translate(300, 315)">
+    <path d="M-80,0 v-120 h-80 a20,20 0 0 0 -20,20 v180 a20,20 0 0 0 20,20 h80 v-100 h-60" stroke="#fe8019" stroke-width="10" fill="none" />
+    <path d="M-80,0 v-120 h80 a20,20 0 0 1 20,20 v180 a20,20 0 0 1 -20,20 h-80 v-100 h60" stroke="#fe8019" stroke-width="10" fill="none" />
+  </g>
+</svg>
