@@ -138,19 +138,15 @@ async def register_user(
         is_active=True,
         role="user",  # Set default role
         theme_preference="gruvbox-dark",  # Set default theme
-        is_verified=False,  # User needs to verify email
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Send verification email
-    auth.send_verification_email(db, new_user.id)
-
     # Create success response with toast notification
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.headers["HX-Trigger"] = (
-        '{"showToast": {"message": "Registration successful! Please check your email to verify your account.", "type": "success"}}'
+        '{"showToast": {"message": "Registration successful! Please log in.", "type": "success"}}'
     )
     set_theme_cookie(response, current_theme)
     return response
@@ -219,12 +215,12 @@ async def login(
 
     # Set cookie max_age to match token expiration
     max_age = 30 * 24 * 60 * 60 if remember_me else 1800  # 30 days or 30 minutes
-
+    
     import os
     # Get environment variables for cookie settings
     cookie_secure = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     cookie_samesite = os.getenv("COOKIE_SAMESITE", "strict")
-
+    
     logger.info(f"Setting access_token cookie (secure: {cookie_secure}, samesite: {cookie_samesite})")
     response.set_cookie(
         key="access_token",
@@ -277,212 +273,6 @@ async def profile(
             "theme": theme,
             "current_theme": current_theme,
             "user": current_user,
-        },
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-# Email verification and password reset routes
-@router.get("/verify-email", response_class=HTMLResponse)
-async def verify_email(request: Request, token: str, db: Session = Depends(database.get_db)):
-    """Verify user email with token."""
-    theme, current_theme = get_current_theme(request)
-    verified = auth.verify_email(db, token)
-
-    if verified:
-        message = "Email verified successfully! You can now log in."
-        message_type = "success"
-    else:
-        message = "Invalid or expired verification link. Please request a new one."
-        message_type = "error"
-
-    response = templates.TemplateResponse(
-        "message.html",
-        {
-            "request": request,
-            "theme": theme,
-            "current_theme": current_theme,
-            "message": message,
-            "message_type": message_type,
-            "redirect_url": "/login",
-            "redirect_text": "Go to Login",
-        },
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.get("/forgot-password", response_class=HTMLResponse)
-async def forgot_password_page(request: Request):
-    """Display forgot password page."""
-    theme, current_theme = get_current_theme(request)
-    response = templates.TemplateResponse(
-        "forgot_password.html",
-        {"request": request, "theme": theme, "current_theme": current_theme},
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.post("/forgot-password", response_class=HTMLResponse)
-async def forgot_password(request: Request, db: Session = Depends(database.get_db)):
-    """Process forgot password request."""
-    form = await request.form()
-    email = form.get("email")
-    theme, current_theme = get_current_theme(request)
-
-    # Send password reset email (this will not reveal if the email exists)
-    auth.send_password_reset_email(db, email)
-
-    # Return success message regardless of whether email exists for security
-    response = templates.TemplateResponse(
-        "message.html",
-        {
-            "request": request,
-            "theme": theme,
-            "current_theme": current_theme,
-            "message": "If your email is registered, you will receive password reset instructions shortly.",
-            "message_type": "info",
-            "redirect_url": "/login",
-            "redirect_text": "Return to Login",
-        },
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.get("/reset-password", response_class=HTMLResponse)
-async def reset_password_page(request: Request, token: str, db: Session = Depends(database.get_db)):
-    """Display reset password page."""
-    theme, current_theme = get_current_theme(request)
-
-    # Verify token is valid
-    user = auth.verify_password_reset_token(db, token)
-    if not user:
-        response = templates.TemplateResponse(
-            "message.html",
-            {
-                "request": request,
-                "theme": theme,
-                "current_theme": current_theme,
-                "message": "Invalid or expired password reset link. Please request a new one.",
-                "message_type": "error",
-                "redirect_url": "/forgot-password",
-                "redirect_text": "Request New Reset Link",
-            },
-        )
-        set_theme_cookie(response, current_theme)
-        return response
-
-    response = templates.TemplateResponse(
-        "reset_password.html",
-        {
-            "request": request,
-            "theme": theme,
-            "current_theme": current_theme,
-            "token": token,
-        },
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.post("/reset-password", response_class=HTMLResponse)
-async def reset_password(request: Request, db: Session = Depends(database.get_db)):
-    """Process password reset."""
-    form = await request.form()
-    token = form.get("token")
-    password = form.get("password")
-    confirm_password = form.get("confirm_password")
-    theme, current_theme = get_current_theme(request)
-
-    # Validate passwords match
-    if password != confirm_password:
-        response = templates.TemplateResponse(
-            "reset_password.html",
-            {
-                "request": request,
-                "theme": theme,
-                "current_theme": current_theme,
-                "token": token,
-                "error": "Passwords do not match",
-            },
-        )
-        set_theme_cookie(response, current_theme)
-        return response
-
-    # Reset password
-    success = auth.reset_password(db, token, password)
-    if not success:
-        response = templates.TemplateResponse(
-            "message.html",
-            {
-                "request": request,
-                "theme": theme,
-                "current_theme": current_theme,
-                "message": "Invalid or expired password reset link. Please request a new one.",
-                "message_type": "error",
-                "redirect_url": "/forgot-password",
-                "redirect_text": "Request New Reset Link",
-            },
-        )
-        set_theme_cookie(response, current_theme)
-        return response
-
-    # Success response
-    response = templates.TemplateResponse(
-        "message.html",
-        {
-            "request": request,
-            "theme": theme,
-            "current_theme": current_theme,
-            "message": "Your password has been reset successfully. You can now log in with your new password.",
-            "message_type": "success",
-            "redirect_url": "/login",
-            "redirect_text": "Go to Login",
-        },
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.get("/resend-verification", response_class=HTMLResponse)
-async def resend_verification_page(request: Request):
-    """Display resend verification email page."""
-    theme, current_theme = get_current_theme(request)
-    response = templates.TemplateResponse(
-        "resend_verification.html",
-        {"request": request, "theme": theme, "current_theme": current_theme},
-    )
-    set_theme_cookie(response, current_theme)
-    return response
-
-
-@router.post("/resend-verification", response_class=HTMLResponse)
-async def resend_verification(request: Request, db: Session = Depends(database.get_db)):
-    """Process resend verification email request."""
-    form = await request.form()
-    email = form.get("email")
-    theme, current_theme = get_current_theme(request)
-
-    # Find user
-    user = db.query(models.User).filter(models.User.email == email).first()
-    if user and not user.is_verified:
-        # Send verification email
-        auth.send_verification_email(db, user.id)
-
-    # Return success message regardless of whether email exists for security
-    response = templates.TemplateResponse(
-        "message.html",
-        {
-            "request": request,
-            "theme": theme,
-            "current_theme": current_theme,
-            "message": "If your email is registered and not yet verified, you will receive a new verification email shortly.",
-            "message_type": "info",
-            "redirect_url": "/login",
-            "redirect_text": "Return to Login",
         },
     )
     set_theme_cookie(response, current_theme)

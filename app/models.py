@@ -51,13 +51,6 @@ class User(Base):
     role = Column(
         String(20), ForeignKey("roles.name"), default="user", nullable=False
     )  # References role.name
-    # Email verification fields
-    is_verified = Column(Boolean, default=False)  # Whether email is verified
-    verification_token = Column(String(255))  # Token for email verification
-    verification_token_expires = Column(DateTime)  # Expiration for verification token
-    # Password reset fields
-    reset_token = Column(String(255))  # Token for password reset
-    reset_token_expires = Column(DateTime)  # Expiration time for reset token
 
     # Relationships
     books = relationship("Book", back_populates="user")
