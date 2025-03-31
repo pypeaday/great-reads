@@ -90,14 +90,14 @@
             </a>
         </div>
         
-        <!-- Trello-like Book Board with integrated stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pb-4" style="min-height: 70vh;">
+        <!-- Book Board with row-based organization -->
+        <div class="flex flex-col gap-6 pb-4" style="min-height: 70vh;">
             {% for status in book_statuses %}
             {% set count = books_by_status.get(status, [])|length %}
-            <div class="book-column h-full bg-theme-bg1/80 rounded-xl shadow-lg border border-theme-bg2/50 overflow-hidden flex flex-col" data-status="{{ status.name }}">
-                <!-- Column Header with Stats -->
-                <div class="px-4 py-3 border-b border-theme-bg2 bg-theme-bg2/90 sticky top-0 z-10 shadow-sm">
-                    <div class="flex items-center justify-between h-11"> <!-- Increased height for better spacing -->
+            <div class="book-row bg-theme-bg1/80 rounded-xl shadow-lg border border-theme-bg2/50 overflow-hidden" data-status="{{ status.name }}">
+                <!-- Row Header with Stats -->
+                <div class="px-4 py-3 bg-theme-bg2/90 z-10 shadow-sm border-b border-theme-bg2/50">
+                    <div class="flex items-center justify-between h-11">
                         <div class="flex items-center">
                             <div class="w-3.5 h-3.5 rounded-full mr-2.5
                                 {% if status.name == 'TO_READ' %}bg-blue-400
@@ -108,7 +108,7 @@
                                 {% endif %}"></div>
                             <h2 class="text-base font-semibold whitespace-nowrap tracking-wide">{{ status.value }}</h2>
                         </div>
-                        <div class="flex items-center space-x-2"> <!-- Added space between icon and count -->
+                        <div class="flex items-center space-x-2">
                             <!-- Status Icon -->
                             <span class="text-lg
                                 {% if status.name == 'TO_READ' %}text-blue-400
@@ -139,10 +139,20 @@
                 </div>
                 
                 <!-- Book Cards Container -->
-                <div class="flex-1 p-3 space-y-3 overflow-y-auto" id="book-list-{{ status.name }}">
+                <div class="relative group">
+                    <!-- Scroll indicators -->
+                    <div class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', -300)">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', 300)">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                    
+                    <div class="p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-theme-bg2 scrollbar-track-transparent" id="book-list-{{ status.name }}">
+                        <div class="flex gap-4 pb-2 snap-x">
                     {% if status in books_by_status %}
                     {% for book in books_by_status[status] %}
-                    <div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
+                    <div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30 min-w-[240px] max-w-[240px] snap-start" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
                         <!-- Card Header with label -->
                         <div class="px-3 pt-3 pb-1 flex items-center justify-between">
                             <div class="flex items-center space-x-1.5">
@@ -203,7 +213,7 @@
                     {% endfor %}
                     {% else %}
                     <!-- Empty state for this status -->
-                    <div class="flex flex-col items-center justify-center py-6 text-theme-fg2/60">
+                    <div class="flex flex-col items-center justify-center py-6 text-theme-fg2/60 min-w-full">
                         <div class="text-3xl mb-2
                             {% if status.name == 'TO_READ' %}text-blue-400/30
                             {% elif status.name == 'READING' %}text-yellow-400/30
@@ -222,12 +232,22 @@
                     </div>
                     {% endif %}
 
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         
         <script>
+            // Horizontal scroll function for book rows
+            function scrollContainer(containerId, scrollAmount) {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                }
+            }
+            
             // Drag and drop functionality
             function drag(event, bookId) {
                 event.dataTransfer.setData("bookId", bookId);
