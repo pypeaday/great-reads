@@ -50,17 +50,24 @@ def set_theme_cookie(response: HTMLResponse, theme_name: str) -> None:
 
 
 @router.post("/token", response_model=schemas.Token)
-async def login_for_access_token(
-    email: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(database.get_db),
-):
+async def login_for_access_token(request: Request, db: Session = Depends(database.get_db)):
     """API endpoint for obtaining a token."""
-    user = auth.authenticate_user(db, email, password)
+    form_data = await request.form()
+    username = form_data.get("username")
+    password = form_data.get("password")
+
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Username and password are required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = auth.authenticate_user(db, username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)

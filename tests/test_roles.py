@@ -166,6 +166,7 @@ def test_custom_role_permissions(client, admin_headers, db):
     # Login as the custom role user
     response = client.post(
         "/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         data={
             "username": "custom@example.com",
             "password": "testpass123",
