@@ -1,6 +1,6 @@
-# {{ project_name }}
+# LitLighthouse
 
-{{ project_description }}
+A book tracking application that helps readers never lose track of their books.
 
 This project was generated from the [FastAPI HTMX Starter Kit]({{ repository_url }}) template, which provides a solid foundation for building web applications with Python, featuring built-in authentication, SQLite database integration, and interactive UI components.
 
