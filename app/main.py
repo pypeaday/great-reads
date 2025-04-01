@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 # Base imports
 from . import auth
 from . import auth_routes
+from . import analytics_routes
 from . import book_routes
 from . import database
 from . import jinja_filters
@@ -82,13 +83,13 @@ async def cookie_to_authorization(request: Request, call_next):
 
     # Check if we have a token and no authorization header already exists
     has_auth_header = False
-    for k, v in request.scope.get("headers", []):
-        if k.decode().lower() == "authorization":
+    for header_name, _ in request.scope.get("headers", []):
+        if header_name.decode().lower() == "authorization":
             has_auth_header = True
             logger.info("Found existing auth header")
             break
 
-    # Create a modified scope with the authorization header if token exists and no auth header
+    # Create a modified scope with the authorization header if token exists and no auth header exists
     if token and not has_auth_header:
         # Get the original headers as a list of tuples
         headers = list(request.scope.get("headers", []))
@@ -120,6 +121,7 @@ if ADMIN_ENABLED:
     app.include_router(admin_routes.router)
 
 app.include_router(book_routes.router)
+app.include_router(analytics_routes.router)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
