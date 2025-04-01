@@ -1,10 +1,9 @@
 """
 Test module for book update functionality in Great Reads application.
 """
-import pytest
 from datetime import datetime
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
+
+import pytest
 
 from app.models import Book, BookStatus
 

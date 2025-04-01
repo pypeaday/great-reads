@@ -141,14 +141,13 @@ def test_multiple_updates(db, test_book):
     book = db.query(Book).filter(Book.id == test_book.id).first()
     assert book is not None
     
-    # Get the COMPLETED status
-    completed_status = db.query(BookStatus).filter(BookStatus.name == "COMPLETED").first()
-    assert completed_status is not None
+    # Use the BookStatus enum directly
+    completed_status = BookStatus.COMPLETED
     
     # Update multiple fields
     book.title = "Multiple Updates Title"
     book.author = "Multiple Updates Author"
-    book.status_id = completed_status.id
+    book.status = completed_status
     book.rating = 3
     book.notes = "Notes after multiple updates"
     
@@ -159,7 +158,7 @@ def test_multiple_updates(db, test_book):
     db.refresh(book)
     assert book.title == "Multiple Updates Title"
     assert book.author == "Multiple Updates Author"
-    assert book.status_id == completed_status.id
+    assert book.status == completed_status
     assert book.rating == 3
     assert book.notes == "Notes after multiple updates"
 
@@ -179,8 +178,8 @@ def test_transaction_rollback(db, test_book):
         book.title = "Rollback Test Title"
         
         # Simulate an error
-        # This will cause an integrity error because status_id cannot be null
-        book.status_id = None
+        # This will cause an integrity error because status cannot be null
+        book.status = None
         
         # Try to commit
         db.commit()
