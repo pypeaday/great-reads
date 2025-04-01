@@ -95,7 +95,7 @@ def test_update_book_status(client, test_book, user_headers, db):
     )
     
     assert response.status_code == 200
-    assert "READING" in response.text
+    assert "Reading" in response.text
     
     # Verify the HX-Trigger header for closing modal
     assert "HX-Trigger" in response.headers
@@ -103,7 +103,7 @@ def test_update_book_status(client, test_book, user_headers, db):
     
     # Verify the database update
     db.refresh(test_book)
-    assert test_book.status_id == reading_status.id
+    assert test_book.status == reading_status
 
 
 def test_update_book_rating(client, test_book, user_headers, db):

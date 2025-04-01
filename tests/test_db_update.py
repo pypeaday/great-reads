@@ -75,20 +75,19 @@ def test_update_book_status(db, test_book):
     book = db.query(Book).filter(Book.id == test_book.id).first()
     assert book is not None
     
-    # Get the ON_HOLD status
-    on_hold_status = db.query(BookStatus).filter(BookStatus.name == "ON_HOLD").first()
-    assert on_hold_status is not None
+    # Use the BookStatus enum directly
+    on_hold_status = BookStatus.ON_HOLD
     
     # Update the status
-    book.status_id = on_hold_status.id
+    book.status = on_hold_status
     db.commit()
     
     # Verify the update
     db.refresh(book)
-    assert book.status_id == on_hold_status.id
+    assert book.status == on_hold_status
     
-    # Verify the relationship works
-    assert book.status.name == "ON_HOLD"
+    # Verify the enum value
+    assert book.status == BookStatus.ON_HOLD
 
 
 def test_update_book_rating(db, test_book):
