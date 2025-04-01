@@ -39,6 +39,9 @@ async def view_analytics(
 
     # Get monthly reading data for chart
     monthly_data = analytics.get_monthly_reading_data(db, current_user.id)
+    
+    # Get books timeline data
+    books_timeline = analytics.get_books_timeline(db, current_user.id)
 
     templates = get_templates(request)
     return templates.TemplateResponse(
@@ -48,5 +51,6 @@ async def view_analytics(
             "current_user": current_user,
             "stats": stats,
             "monthly_data": monthly_data,
+            "books_timeline": books_timeline,
         },
     )
