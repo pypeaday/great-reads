@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from sqlalchemy import func
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from . import models
@@ -164,3 +164,54 @@ def get_monthly_reading_data(db: Session, user_id: int) -> list[dict]:
     months_data.reverse()
 
     return months_data
+
+
+def get_books_timeline(db: Session, user_id: int, limit: int = 50) -> list[dict]:
+    """Get a timeline of all books for a user, sorted by relevant dates.
+    
+    Returns books with their status and relevant dates (completion date for completed books,
+    start date for reading books, and created date for others).
+    """
+    # Get all books for the user
+    books = (
+        db.query(models.Book)
+        .filter(models.Book.user_id == user_id)
+        .order_by(
+            # Sort by completion date (desc) for completed books
+            desc(models.Book.completion_date),
+            # Then by start date (desc) for reading books
+            desc(models.Book.start_date),
+            # Then by created date (desc) for all other books
+            desc(models.Book.created_at)
+        )
+        .limit(limit)
+        .all()
+    )
+    # Format books for timeline display
+    timeline_items = []
+    for book in books:
+        # Determine the relevant date based on book status
+        if book.status == models.BookStatus.COMPLETED and book.completion_date:
+            relevant_date = book.completion_date
+            date_label = "Completed on"
+        elif book.status == models.BookStatus.READING and book.start_date:
+            relevant_date = book.start_date
+            date_label = "Started on"
+        else:
+            relevant_date = book.created_at
+            date_label = "Added on"
+        # Format the date for display
+        formatted_date = relevant_date.strftime("%b %d, %Y")
+        
+        timeline_items.append({
+            "id": book.id,
+            "title": book.title,
+            "author": book.author,
+            "status": book.status.value,
+            "rating": book.rating,
+            "date": formatted_date,
+            "date_label": date_label,
+            "notes": book.notes
+        })
+    
+    return timeline_items
