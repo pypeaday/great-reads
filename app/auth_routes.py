@@ -263,8 +263,18 @@ async def profile(
     current_user: models.User = Depends(user_dependency),
     db: Session = Depends(database.get_db),
 ):
-    """Display user profile."""
+    """Display user profile with analytics."""
     theme, current_theme = get_current_theme(request)
+    
+    # Get reading stats
+    from . import analytics
+    stats = analytics.get_reading_stats(db, current_user.id)
+    
+    # Get monthly reading data for chart
+    monthly_data = analytics.get_monthly_reading_data(db, current_user.id)
+    
+    # Get books timeline data
+    books_timeline = analytics.get_books_timeline(db, current_user.id)
 
     response = templates.TemplateResponse(
         "profile.html",
@@ -273,6 +283,9 @@ async def profile(
             "theme": theme,
             "current_theme": current_theme,
             "user": current_user,
+            "stats": stats,
+            "monthly_data": monthly_data,
+            "books_timeline": books_timeline,
         },
     )
     set_theme_cookie(response, current_theme)
