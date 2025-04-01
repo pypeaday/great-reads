@@ -116,7 +116,38 @@ SAMPLE_BOOKS = [
     {"title": "Educated", "author": "Tara Westover"},
     {"title": "Becoming", "author": "Michelle Obama"},
     {"title": "The Power of Habit", "author": "Charles Duhigg"},
-    {"title": "Atomic Habits", "author": "James Clear"}
+    {"title": "Atomic Habits", "author": "James Clear"},
+    {"title": "The Midnight Library", "author": "Matt Haig"},
+    {"title": "Project Hail Mary", "author": "Andy Weir"},
+    {"title": "The Seven Husbands of Evelyn Hugo", "author": "Taylor Jenkins Reid"},
+    {"title": "The Invisible Life of Addie LaRue", "author": "V.E. Schwab"},
+    {"title": "Circe", "author": "Madeline Miller"},
+    {"title": "The Song of Achilles", "author": "Madeline Miller"},
+    {"title": "Normal People", "author": "Sally Rooney"},
+    {"title": "The Thursday Murder Club", "author": "Richard Osman"},
+    {"title": "Klara and the Sun", "author": "Kazuo Ishiguro"},
+    {"title": "The Vanishing Half", "author": "Brit Bennett"},
+    {"title": "A Gentleman in Moscow", "author": "Amor Towles"},
+    {"title": "The Lincoln Highway", "author": "Amor Towles"},
+    {"title": "The Four Winds", "author": "Kristin Hannah"},
+    {"title": "The Nightingale", "author": "Kristin Hannah"},
+    {"title": "The Overstory", "author": "Richard Powers"},
+    {"title": "Hamnet", "author": "Maggie O'Farrell"},
+    {"title": "The House in the Cerulean Sea", "author": "TJ Klune"},
+    {"title": "Pachinko", "author": "Min Jin Lee"},
+    {"title": "The Fifth Season", "author": "N.K. Jemisin"},
+    {"title": "The Three-Body Problem", "author": "Liu Cixin"},
+    {"title": "Exhalation", "author": "Ted Chiang"},
+    {"title": "Children of Time", "author": "Adrian Tchaikovsky"},
+    {"title": "The Priory of the Orange Tree", "author": "Samantha Shannon"},
+    {"title": "The City We Became", "author": "N.K. Jemisin"},
+    {"title": "Mexican Gothic", "author": "Silvia Moreno-Garcia"},
+    {"title": "The Starless Sea", "author": "Erin Morgenstern"},
+    {"title": "The Water Dancer", "author": "Ta-Nehisi Coates"},
+    {"title": "On Earth We're Briefly Gorgeous", "author": "Ocean Vuong"},
+    {"title": "The Dutch House", "author": "Ann Patchett"},
+    {"title": "The Testaments", "author": "Margaret Atwood"},
+    {"title": "The Nickel Boys", "author": "Colson Whitehead"}
 ]
 
 # Sample notes
@@ -193,12 +224,23 @@ def upgrade() -> None:
         # Current time for reference
         now = datetime.utcnow()
 
-        # Add 30 random books to the demo user
-        selected_books = random.sample(SAMPLE_BOOKS, 30)
+        # Add 50 random books to the demo user
+        selected_books = random.sample(SAMPLE_BOOKS, 50)
 
         for book_data in selected_books:
-            # Randomly select a status
-            status = random.choice(list(BookStatus))
+            # Weighted selection for status - make COMPLETED more common
+            status_weights = {
+                BookStatus.COMPLETED: 0.6,  # 60% chance for COMPLETED
+                BookStatus.READING: 0.15,   # 15% chance for READING
+                BookStatus.TO_READ: 0.1,    # 10% chance for TO_READ
+                BookStatus.ON_HOLD: 0.1,    # 10% chance for ON_HOLD
+                BookStatus.DNF: 0.05        # 5% chance for DNF
+            }
+            status = random.choices(
+                population=list(status_weights.keys()),
+                weights=list(status_weights.values()),
+                k=1
+            )[0]
 
             # Set appropriate dates based on status
             start_date = None
@@ -218,8 +260,15 @@ def upgrade() -> None:
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
-                # 0-3 rating for completed books
-                rating = random.randint(0, 3)
+                # 0-5 rating for completed books with a distribution
+                # favoring higher ratings
+                # Weights for ratings 0-5
+                rating_weights = [0.05, 0.1, 0.15, 0.25, 0.25, 0.2]
+                rating = random.choices(
+                    population=range(6),
+                    weights=rating_weights,
+                    k=1
+                )[0]
 
             # Random notes
             notes = random.choice(SAMPLE_NOTES) if random.random() > 0.3 else None
@@ -243,7 +292,7 @@ def upgrade() -> None:
 
         # Commit all changes
         session.commit()
-        print("Successfully added demo user with 30 sample books")
+        print("Successfully added demo user with 50 sample books")
 
     except Exception as e:
         session.rollback()
