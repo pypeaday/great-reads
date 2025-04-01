@@ -173,12 +173,12 @@ def create_random_books(user_id, num_books=20):
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
-                # 0-5 rating for completed books with a distribution
+                # 0-3 rating for completed books with a distribution
                 # favoring higher ratings
-                # Weights for ratings 0-5
-                rating_weights = [0.05, 0.1, 0.15, 0.25, 0.25, 0.2]
+                # Weights for ratings 0-3
+                rating_weights = [0.1, 0.2, 0.3, 0.4]
                 rating = random.choices(
-                    population=range(6),
+                    population=range(4),
                     weights=rating_weights,
                     k=1
                 )[0]

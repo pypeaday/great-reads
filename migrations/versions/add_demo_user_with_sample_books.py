@@ -7,6 +7,7 @@ Create Date: 2025-03-31 09:42:37.000000
 """
 
 import enum
+import json
 import random
 from collections.abc import Sequence
 from datetime import datetime
@@ -179,11 +180,22 @@ def upgrade() -> None:
         # Ensure the user role exists
         user_role = session.query(Role).filter(Role.name == "user").first()
         if not user_role:
-            # Create user role if it doesn't exist
+            # Create user role if it doesn't exist with proper permissions
+            user_permissions = {
+                "view_users": False,
+                "manage_users": False,
+                "view_roles": False,
+                "manage_roles": False,
+                "view_system": False,
+                "manage_system": False,
+                "view_all_books": False,
+                "manage_all_books": False,
+                "manage_own_books": True,
+            }
             user_role = Role(
                 name="user",
                 description="Regular user with standard permissions",
-                permissions="{}",
+                permissions=json.dumps(user_permissions),
                 created_at=datetime.utcnow()
             )
             session.add(user_role)
@@ -198,11 +210,26 @@ def upgrade() -> None:
         if demo_user:
             print(f"Demo user exists: {demo_email} - Resetting books")
             # Count books before deletion
-            book_count = session.query(Book).filter(Book.user_id == demo_user.id).count()
+            book_count = session.query(Book).filter(
+                Book.user_id == demo_user.id
+            ).count()
             # Delete all books for the demo user
             session.query(Book).filter(Book.user_id == demo_user.id).delete()
             session.flush()
             print(f"Deleted {book_count} existing books for demo user")
+            # Also ensure the user role has the correct permissions
+            has_permission = False
+            if user_role:
+                permissions = json.loads(user_role.permissions)
+                has_permission = permissions.get("manage_own_books", False)
+            if user_role and not has_permission:
+                user_permissions = json.loads(
+                    user_role.permissions
+                )
+                user_permissions["manage_own_books"] = True
+                user_role.permissions = json.dumps(user_permissions)
+                session.flush()
+                print("Updated user role permissions to include manage_own_books")
         else:
 
             # Create new demo user
@@ -246,7 +273,10 @@ def upgrade() -> None:
             start_date = None
             completion_date = None
 
-            if status in [BookStatus.READING, BookStatus.COMPLETED, BookStatus.DNF, BookStatus.ON_HOLD]:
+            if status in [
+                BookStatus.READING, BookStatus.COMPLETED,
+                BookStatus.DNF, BookStatus.ON_HOLD
+            ]:
                 # For books that have been started, set a start date in the past
                 days_ago = random.randint(10, 365)
                 start_date = now - timedelta(days=days_ago)
@@ -260,12 +290,12 @@ def upgrade() -> None:
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
-                # 0-5 rating for completed books with a distribution
+                # 0-3 rating for completed books with a distribution
                 # favoring higher ratings
-                # Weights for ratings 0-5
-                rating_weights = [0.05, 0.1, 0.15, 0.25, 0.25, 0.2]
+                # Weights for ratings 0-3
+                rating_weights = [0.1, 0.2, 0.3, 0.4]
                 rating = random.choices(
-                    population=range(6),
+                    population=range(4),
                     weights=rating_weights,
                     k=1
                 )[0]

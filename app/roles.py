@@ -52,10 +52,11 @@ DEFAULT_ROLES = {
 
 
 def ensure_default_roles_exist(db: Session):
-    """Ensure default roles exist in the database."""
+    """Ensure default roles exist in the database and have correct permissions."""
     for role_name, role_data in DEFAULT_ROLES.items():
         role = db.query(models.Role).filter(models.Role.name == role_name).first()
         if not role:
+            # Create new role if it doesn't exist
             role = models.Role(
                 name=role_name,
                 description=role_data["description"],
@@ -63,12 +64,20 @@ def ensure_default_roles_exist(db: Session):
                 created_at=datetime.utcnow(),
             )
             db.add(role)
+        else:
+            # Update existing role permissions to ensure they match the defaults
+            current_permissions = json.loads(role.permissions)
+            default_permissions = role_data["permissions"]
+            # Check if permissions need updating
+            if current_permissions != default_permissions:
+                role.permissions = json.dumps(default_permissions)
+                role.description = role_data["description"]
 
     try:
         db.commit()
     except Exception as e:
         db.rollback()
-        raise Exception(f"Error ensuring default roles exist: {e}")
+        raise Exception(f"Error ensuring default roles exist: {e}") from e
 
 
 def has_permission(user: models.User, permission: str) -> bool:

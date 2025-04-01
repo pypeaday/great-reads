@@ -56,9 +56,9 @@
                     <label for="rating_filter" class="block text-sm font-medium text-text2 mb-1">Rating</label>
                     <select id="rating_filter" name="rating_filter" class="w-full bg-bg1 text-text1 border border-bg3 rounded px-3 py-2">
                         <option value="">Any Rating</option>
-                        <option value="0" {% if rating_filter == '0' %}selected{% endif %}>★☆☆</option>
-                        <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★★☆</option>
-                        <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★★</option>
+                        <option value="0" {% if rating_filter == '0' %}selected{% endif %}>No Rating</option>
+                        <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★☆☆</option>
+                        <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★☆</option>
                         <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★</option>
                     </select>
                 </div>

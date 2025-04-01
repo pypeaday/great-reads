@@ -213,7 +213,7 @@ async def edit_book_form(
     )
 
 
-@router.put("/{book_id}", response_model=None)
+@router.post("/{book_id}", response_model=None)
 @requires_permission("manage_own_books")
 async def update_book(
     request: Request,
@@ -315,7 +315,7 @@ async def delete_book(
     return {"success": True}
 
 
-@router.put("/{book_id}/inline-update", response_model=None)
+@router.post("/{book_id}/inline-update", response_model=None)
 @requires_permission("manage_own_books")
 async def inline_update_book(
     request: Request,
@@ -450,7 +450,7 @@ async def book_modal(
     )
 
 
-@router.put("/{book_id}/status", response_model=None)
+@router.post("/{book_id}/status", response_model=None)
 @requires_permission("manage_own_books")
 async def update_book_status(
     request: Request,

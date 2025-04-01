@@ -170,8 +170,6 @@
                                 <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★☆☆</option>
                                 <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★☆</option>
                                 <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★</option>
-                                <option value="4" {% if rating_filter == '4' %}selected{% endif %}>★★★★</option>
-                                <option value="5" {% if rating_filter == '5' %}selected{% endif %}>★★★★★</option>
                             </select>
                         </div>
                     </div>
@@ -414,7 +412,7 @@
                         
                         // Update book status via API
                         fetch(`/books/${bookId}/status`, {
-                            method: 'PUT',
+                            method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
@@ -467,7 +465,7 @@
                             
                             // Update book status via API
                             fetch(`/books/${bookId}/status`, {
-                                method: 'PUT',
+                                method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },
