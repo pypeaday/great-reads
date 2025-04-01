@@ -1,57 +1,52 @@
 
-<div class="py-3 px-4 hover:bg-theme-bg2/50 transition-colors book-card" id="book-{{ book.id }}" onclick="openModal('{{ book.id }}')">
-
-    <div class="flex justify-between items-start">
-        <!-- Title section -->
-        <div class="flex-1">
-            <h3 class="font-semibold">{{ book.title }}</h3>
-            <p class="text-theme-fg1 text-sm">by {{ book.author }}</p>
+<div class="book-card bg-theme-bg2/90 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-theme-bg1/30 w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.75rem)] lg:min-w-[240px] lg:max-w-[240px] snap-start cursor-grab active:cursor-grabbing" id="book-{{ book.id }}" draggable="true" ondragstart="drag(event, '{{ book.id }}')">
+    <!-- Card Header with label -->
+    <div class="px-3 pt-3 pb-1 flex items-center justify-between">
+        <div class="flex items-center space-x-1.5">
+            {% if book.rating is not none %}
+            <div class="text-yellow-400 flex items-center text-xs">
+                {% for i in range(book.rating) %}
+                    <i class="fas fa-star"></i>
+                {% endfor %}
+                {% for i in range(3 - book.rating) %}
+                    <i class="far fa-star"></i>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="flex space-x-1">
+            {% if book.pages %}
+            <span class="text-xs text-theme-fg2 bg-theme-bg1/40 px-1.5 py-0.5 rounded">
+                {{ book.pages }} p
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Book Content -->
+    <div class="px-3 py-2">
+        <h3 class="font-semibold text-theme-fg truncate">{{ book.title }}</h3>
+        <p class="text-theme-fg2 text-sm truncate">by {{ book.author }}</p>
+        
+        <!-- Status Badge -->
+        <div class="mt-2 flex items-center">
+            <span class="px-2 py-0.5 rounded text-xs font-medium
+                {% if book.status.name == 'TO_READ' %}bg-blue-100 text-blue-800
+                {% elif book.status.name == 'READING' %}bg-yellow-100 text-yellow-800
+                {% elif book.status.name == 'COMPLETED' %}bg-green-100 text-green-800
+                {% elif book.status.name == 'ON_HOLD' %}bg-purple-100 text-purple-800
+                {% elif book.status.name == 'DNF' %}bg-red-100 text-red-800
+                {% endif %}">
+                {{ book.status.name|replace('_', ' ')|title }}
+            </span>
         </div>
         
-        <div>
-    </div>
-    
-
-    
-    <div class="flex items-center mt-1">
-        <span class="px-2 py-1 rounded text-xs 
-            {% if book.status.name == 'TO_READ' %}bg-blue-100 text-blue-800
-            {% elif book.status.name == 'READING' %}bg-yellow-100 text-yellow-800
-            {% elif book.status.name == 'COMPLETED' %}bg-green-100 text-green-800
-            {% elif book.status.name == 'ON_HOLD' %}bg-purple-100 text-purple-800
-            {% elif book.status.name == 'DNF' %}bg-red-100 text-red-800
-            {% endif %}">
-            {{ book.status.name|replace('_', ' ')|title }}
-        </span>
-    
-        {% if book.rating is not none %}
-        <div class="flex ml-2">
-            {% for i in range(3) %}
-            <span class="{% if i < book.rating %}text-yellow-500{% else %}text-gray-300{% endif %}">★</span>
-            {% endfor %}
+        <!-- Notes preview (truncated) -->
+        {% if book.notes %}
+        <div class="mt-2 text-theme-fg2 text-xs">
+            <p class="truncate">{{ book.notes }}</p>
         </div>
         {% endif %}
-    </div>
-    
-    <!-- Notes preview (truncated) -->
-    {% if book.notes %}
-    <div class="mt-2 text-theme-fg1 text-sm">
-        <p class="truncate">{{ book.notes }}</p>
-    </div>
-    {% endif %}
-                          class="w-full border rounded p-2 text-sm bg-bg1 text-text1 border-bg3">{{ book.notes or "" }}</textarea>
-                <div class="flex justify-end mt-2">
-                    <button type="submit" class="bg-accent1 hover:bg-accent2 text-white px-3 py-1 rounded text-sm transition-colors mr-2">
-                        Save
-                    </button>
-                    <button type="button" onclick="toggleEditMode('{{ book.id }}', 'notes')" 
-                            class="bg-bg3 hover:bg-red-500 hover:text-white text-text2 px-3 py-1 rounded text-sm transition-colors">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
     
     <!-- Dates section -->
     <div class="text-xs text-text2 mt-4">

@@ -180,6 +180,38 @@ async def create_book(
     )
 
 
+@router.get("/{book_id}", response_class=HTMLResponse, response_model=None)
+async def get_book(
+    request: Request,
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    """Get a single book by ID."""
+    book = db.query(models.Book).filter(models.Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+        
+    # Check if user has permission to view this book
+    if book.user_id != current_user.id and not roles.has_permission(
+        current_user, "view_all_books"
+    ):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this book",
+        )
+        
+    templates = get_templates(request)
+    return templates.TemplateResponse(
+        "books/book_modal.html",
+        {
+            "request": request,
+            "book": book,
+            "current_user": current_user,
+        },
+    )
+
+
 @router.get("/{book_id}/edit", response_class=HTMLResponse, response_model=None)
 @requires_permission("manage_own_books")
 async def edit_book_form(
@@ -315,7 +347,7 @@ async def delete_book(
     return {"success": True}
 
 
-@router.post("/{book_id}/inline-update", response_model=None)
+@router.post("/{book_id}/inline-update", response_class=HTMLResponse)
 @requires_permission("manage_own_books")
 async def inline_update_book(
     request: Request,
@@ -330,6 +362,7 @@ async def inline_update_book(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Update a specific field of a book via inline editing."""
+    # Dependencies are now properly injected via function parameters
     # Get the book
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
@@ -362,9 +395,9 @@ async def inline_update_book(
             book.status = new_status
         except KeyError:
             raise HTTPException(status_code=400, detail="Invalid status") from None
-    elif update_type == "rating" and rating is not None:
+    elif update_type == "rating":
         # Handle rating
-        if rating == "null":
+        if rating == "null" or rating is None:
             book.rating = None
         else:
             try:
@@ -374,6 +407,8 @@ async def inline_update_book(
                         status_code=400, detail="Rating must be between 0 and 3"
                     )
                 book.rating = parsed_rating
+                # Print for debugging
+                print(f"Setting rating to {parsed_rating} for book {book.id}")
             except ValueError:
                 raise HTTPException(
                     status_code=400,
@@ -396,31 +431,46 @@ async def inline_update_book(
 
     # Update the timestamp
     book.updated_at = datetime.utcnow()
-    db.commit()
+    
+    # Print debugging information
+    print(f"Before commit - Book {book.id} update: {update_type}")
+    print(f"Book status: {book.status}, title: {book.title}, author: {book.author}")
+    print(f"Book rating: {book.rating}")
 
-    # Get all books for the current status to render the updated book in context
+    try:
+        # Commit changes to database
+        db.commit()
+
+        # Verify the changes were committed
+        db.refresh(book)
+        print(f"After commit - Book {book.id} update: {update_type}")
+        print(f"Book status: {book.status}, title: {book.title}, author: {book.author}")
+        print(f"Book rating: {book.rating}")
+    except Exception as e:
+        print(f"Error updating book: {e}")
+        db.rollback()
+        error_msg = f"Failed to update book: {str(e)}"
+        raise HTTPException(status_code=500, detail=error_msg) from e
+
+    # Get templates
     templates = get_templates(request)
-
-    # If this was a status update, redirect to refresh the page
-    if update_type == "status":
-        return RedirectResponse(
-            url="/",
-            status_code=http_status.HTTP_303_SEE_OTHER
-        )
-
-    # For other updates, return just the updated book HTML
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "books/book_card.html",
         {
             "request": request,
             "current_user": current_user,
             "book": book,
             "statuses": list(models.BookStatus),
+            "book_statuses": list(models.BookStatus),  # For the modal
         },
     )
 
+    # Add HX-Trigger header to close the modal
+    response.headers["HX-Trigger"] = '{"closeModal": true}'
+    return response
 
-@router.get("/{book_id}/modal", response_class=HTMLResponse, response_model=None)
+
+@router.get("/{book_id}/modal", response_class=HTMLResponse)
 async def book_modal(
     request: Request,
     book_id: int,
@@ -428,6 +478,7 @@ async def book_modal(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Get book details for modal display."""
+    # Dependencies are now properly injected via function parameters
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -450,7 +501,7 @@ async def book_modal(
     )
 
 
-@router.post("/{book_id}/status", response_model=None)
+@router.post("/{book_id}/status")
 @requires_permission("manage_own_books")
 async def update_book_status(
     request: Request,
@@ -459,6 +510,7 @@ async def update_book_status(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Update a book's status via drag-and-drop."""
+    # Dependencies are now properly injected via function parameters
     # Get JSON data from request
     status_data = await request.json()
     # Get the book
