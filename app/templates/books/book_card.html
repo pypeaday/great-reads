@@ -20,45 +20,38 @@
                 {{ book.pages }} p
             </span>
             {% endif %}
+            <button onclick="deleteBook('{{ book.id }}'); event.stopPropagation();" class="text-theme-fg2 hover:text-red-400 transition-all p-1 rounded" title="Delete Book">
+                <i class="fas fa-times text-xs"></i>
+            </button>
         </div>
     </div>
     
-    <!-- Book Content -->
-    <div class="px-3 py-2">
-        <h3 class="font-semibold text-theme-fg truncate">{{ book.title }}</h3>
-        <p class="text-theme-fg2 text-sm truncate">by {{ book.author }}</p>
+    <!-- Card Content -->
+    <div class="p-3 pt-1 cursor-pointer" onclick="openModal('{{ book.id }}')">
+        <!-- Title with colored accent -->
+        <div class="relative mb-2">
+            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full
+                {% if book.status.name == 'TO_READ' %}bg-blue-400
+                {% elif book.status.name == 'READING' %}bg-yellow-400
+                {% elif book.status.name == 'COMPLETED' %}bg-green-400
+                {% elif book.status.name == 'ON_HOLD' %}bg-purple-400
+                {% elif book.status.name == 'DNF' %}bg-red-400
+                {% endif %}"></div>
+            <h3 class="font-semibold text-sm leading-tight pl-2.5 line-clamp-2">{{ book.title }}</h3>
+        </div>
         
-        <!-- Status Badge -->
-        <div class="mt-2 flex items-center">
-            <span class="px-2 py-0.5 rounded text-xs font-medium
-                {% if book.status.name == 'TO_READ' %}bg-blue-100 text-blue-800
-                {% elif book.status.name == 'READING' %}bg-yellow-100 text-yellow-800
-                {% elif book.status.name == 'COMPLETED' %}bg-green-100 text-green-800
-                {% elif book.status.name == 'ON_HOLD' %}bg-purple-100 text-purple-800
-                {% elif book.status.name == 'DNF' %}bg-red-100 text-red-800
-                {% endif %}">
-                {{ book.status.name|replace('_', ' ')|title }}
+        <!-- Author -->
+        <p class="text-theme-fg1 text-xs opacity-75 flex items-center mt-1">
+            <i class="fas fa-user-edit text-theme-fg2 mr-1.5 text-[10px]"></i> {{ book.author }}
+        </p>
+        
+        <!-- Footer with date -->
+        <div class="flex justify-between items-center mt-3 pt-2 border-t border-theme-bg1/20">
+            <span class="text-xs text-theme-fg2 flex items-center">
+                <i class="fas fa-calendar-alt mr-1 text-[10px]"></i>
+                {{ book.created_at.strftime('%b %d') }}
             </span>
         </div>
-        
-        <!-- Notes preview (truncated) -->
-        {% if book.notes %}
-        <div class="mt-2 text-theme-fg2 text-xs">
-            <p class="truncate">{{ book.notes }}</p>
-        </div>
-        {% endif %}
-    
-    <!-- Dates section -->
-    <div class="text-xs text-text2 mt-4">
-        {% if book.start_date %}
-        <p>Started: {{ book.start_date.strftime('%Y-%m-%d') }}</p>
-        {% endif %}
-        
-        {% if book.completion_date %}
-        <p>Completed: {{ book.completion_date.strftime('%Y-%m-%d') }}</p>
-        {% endif %}
-        
-        <p class="mt-1">Added: {{ book.created_at.strftime('%Y-%m-%d') }}</p>
     </div>
 </div>
 
