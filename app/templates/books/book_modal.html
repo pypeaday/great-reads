@@ -8,6 +8,7 @@
               hx-target="#book-{{ book.id }}" 
               hx-swap="outerHTML"
               hx-boost="false"
+              enctype="multipart/form-data"
               hx-on::after-request="closeModal(event)"
               onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="title">
@@ -29,6 +30,7 @@
               hx-target="#book-{{ book.id }}" 
               hx-swap="outerHTML"
               hx-boost="false"
+              enctype="multipart/form-data"
               hx-on::after-request="closeModal(event)"
               onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="author">
@@ -53,6 +55,7 @@
                   hx-target="#book-{{ book.id }}" 
                   hx-swap="outerHTML"
                   hx-boost="false"
+                  enctype="multipart/form-data"
                   hx-on::after-request="closeModal()"
                   onsubmit="logFormData(event)">
                 <input type="hidden" name="update_type" value="status">
@@ -82,6 +85,7 @@
                   hx-target="#book-{{ book.id }}" 
                   hx-swap="outerHTML"
                   hx-boost="false"
+                  enctype="multipart/form-data"
                   hx-on::after-request="closeModal()"
                   onsubmit="logFormData(event)">
                 <input type="hidden" name="update_type" value="rating">
@@ -111,6 +115,7 @@
               hx-target="#book-{{ book.id }}" 
               hx-swap="outerHTML"
               hx-boost="false"
+              enctype="multipart/form-data"
               hx-on::after-request="closeModal(event)"
               onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="notes">

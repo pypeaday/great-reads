@@ -352,17 +352,28 @@ async def delete_book(
 async def inline_update_book(
     request: Request,
     book_id: int,
-    update_type: str = Form(...),
-    notes: str | None = Form(None),
-    status: str | None = Form(None),
-    rating: str | None = Form(None),
-    title: str | None = Form(None),
-    author: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     """Update a specific field of a book via inline editing."""
-    # Dependencies are now properly injected via function parameters
+    # Manually extract form data from the request
+    form_data = await request.form()
+
+    # Extract fields from form data
+    update_type = form_data.get("update_type")
+    notes = form_data.get("notes")
+    status = form_data.get("status")
+    rating = form_data.get("rating")
+    title = form_data.get("title")
+    author = form_data.get("author")
+
+    # Debug logging
+    print(f"Received form data: {dict(form_data)}")
+    print(f"Update type: {update_type}")
+
+    # Validate required fields
+    if not update_type:
+        raise HTTPException(status_code=400, detail="Update type is required")
     # Get the book
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
