@@ -1,74 +1,104 @@
-# greatReads
+# Great Reads
 
 A book tracking application that helps readers never lose track of their books.
 
-This project was generated from the [FastAPI HTMX Starter Kit]({{ repository_url }}) template, which provides a solid foundation for building web applications with Python, featuring built-in authentication, SQLite database integration, and interactive UI components.
+## Self-Hosting Instructions
 
-## Features
+### Quick Start (Docker | Recommended)
 
-- **FastAPI Backend**: High-performance, easy-to-use web framework
-- **HTMX Integration**: Modern, browser-native interactivity without complex JavaScript
-- **SQLite Database**: Simple, file-based database with SQLAlchemy ORM
-- **User Authentication**: Built-in email/password authentication with JWT tokens
-{% if include_admin_interface %}
-- **Admin Interface**: Ready-to-use admin dashboard
-{% endif %}
-- **Theme Support**: Dark/light theme switching with customizable colors
-{% if include_example_routes %}
-- **Interactive UI Components**: Pre-built HTMX-powered components (todo list, infinite scroll, etc.)
-{% endif %}
-
-## Quick Start
-
-0. Install UV:
+1. Clone the repository:
 ```bash
-# On macOS/Linux:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# On Windows:
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+git clone https://github.com/pypeaday/great-reads.git
+cd great-reads
 ```
 
-1. Create and activate a virtual environment:
-```bash
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-2. Install dependencies:
-```bash
-# Install all dependencies (including development tools):
-uv pip install -e ".[dev]"
-
-# Or for production dependencies only:
-uv pip install -e "."
-```
-
-3. Copy the example environment file and configure it:
+2. Copy the example environment file and configure it:
 ```bash
 cp .env.example .env
 ```
 
-4. Run the development server:
+You only need to change 3 things:
+
+```
+# JWT configuration
+JWT_SECRET_KEY=dev_secret_key_change_in_production
+
+# Admin user configuration
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=admin123
+```
+
+3. Build and run the application:
+```bash
+docker compose up --build
+```
+
+Visit `http://localhost:8000` to see your application running.
+
+### Quick Start (Python)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/pypeaday/great-reads.git
+cd great-reads
+```
+
+2. Create and activate a virtual environment:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -e "."
+```
+
+4. Copy the example environment file and configure it:
+```bash
+cp .env.example .env
+```
+
+5. Run the application:
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Visit `http://localhost:{{ port }}` to see your application running.
+Visit `http://localhost:8000` to see your application running.
+
+### Demo User
+
+A demo user with sample books is automatically created when you first run the application. You can log in with these credentials:
+
+- **Email**: demo@example.com
+- **Password**: demo
+
+## Features
+
+- **Book Tracking**: Add, update, and organize your reading collection
+- **Reading Status**: Track books as "want to read", "currently reading", or "finished"
+- **Notes & Ratings**: Add personal notes and ratings for each book
+- **FastAPI Backend**: High-performance Python web framework
+- **HTMX Integration**: Modern interactivity without complex JavaScript
+- **SQLite Database**: Simple, file-based database with SQLAlchemy ORM
+- **User Authentication**: Email/password authentication with JWT tokens
+- **Theme Support**: Dark/light theme switching
 
 ## Environment Variables
 
 Configure these variables in your `.env` file:
 
-- `DATABASE_URL`: SQLite database URL (default: {{ database_url }})
+- `DATABASE_URL`: SQLite database URL (default: sqlite:///./app.db)
 - `JWT_SECRET_KEY`: Secret key for JWT token generation
-- `ADMIN_EMAIL`: Default admin user email (default: {{ admin_email }})
-- `ADMIN_PASSWORD`: Default admin user password (change in production!)
-- `HOST`: Server host (default: {{ host }})
-- `PORT`: Server port (default: {{ port }})
+- `ADMIN_EMAIL`: Default admin user email
+- `ADMIN_PASSWORD`: Default admin user password
+- `HOST`: Server host (default: 0.0.0.0)
+- `PORT`: Server port (default: 8000)
 - `ENVIRONMENT`: Development or production mode
 
-## Project Structure
+## Developer Information
+
+### Project Structure
 
 ```
 .
@@ -77,68 +107,23 @@ Configure these variables in your `.env` file:
 │   ├── main.py          # FastAPI application setup
 │   ├── database.py      # Database configuration
 │   ├── models.py        # SQLAlchemy models
-│   ├── auth.py         # Authentication logic
-│   ├── htmx.py        # HTMX utility functions
-│   ├── static/
-│   │   └── css/
-│   │       └── theme.css # Theme styles
-│   └── templates/
-│       ├── base.html    # Base template
-│       ├── index.html   # Home page
-│       ├── login.html   # Login page
-│       ├── register.html # Registration page
-│       {% if include_admin_interface %}└── admin/
-│           └── dashboard.html # Admin dashboard{% endif %}
-│
-└── agent/               # AI agent workspace
-    ├── context/        # Core project context (immutable)
-    │   ├── architecture.md
-    │   ├── constraints.md
-    │   ├── goals.md
-    │   └── standards/
-    ├── memory/         # Persistent knowledge (append-only)
-    │   ├── decisions/
-    │   ├── progress/
-    │   └── learnings/
-    └── workspace/      # Active development (mutable)
-        ├── current/
-        ├── planning/
-        └── validation/
+│   ├── auth.py          # Authentication logic
+│   ├── htmx.py          # HTMX utility functions
+│   ├── static/          # Static assets
+│   └── templates/       # HTML templates
+├── migrations/          # Database migrations
+└── tests/               # Test suite
 ```
 
-## Authentication
+### Development Setup
 
-The application includes a complete authentication system:
+For development, install the development dependencies:
 
-- User registration with email/password
-- JWT token-based authentication
-- Remember me functionality
-- Role-based authorization (user/admin)
-- Automatic admin user creation
+```bash
+pip install -e ".[dev]"
+```
 
-### Demo User
-
-A demo user with sample books is automatically created when you run database migrations. You can log in with these credentials to explore the application:
-
-- **Email**: demo@example.com
-- **Password**: demo
-
-The demo user's data is automatically reset whenever migrations are run, ensuring a clean demonstration environment.
-
-## HTMX Features
-
-The application demonstrates various HTMX capabilities:
-
-- Dynamic content loading
-- Form submissions without page reloads
-- Infinite scroll
-- Active search
-- Toast notifications
-- Theme switching
-
-## Development
-
-### Adding New Routes
+#### Adding New Routes
 
 1. Create a new route file in the `app` directory
 2. Define your routes using FastAPI's router
@@ -155,20 +140,7 @@ def my_route():
     return {"message": "Hello"}
 ```
 
-### Database Migrations
-
-The project uses SQLAlchemy for database management. To make changes to the database schema:
-
-1. Modify the models in `models.py`
-2. The changes will be automatically applied on next startup
-
-### Theme Customization
-
-1. Add new themes in `app/themes.py`
-2. Update theme CSS variables in `static/css/theme.css`
-3. Use theme classes in your templates
-
-## Production Deployment
+### Production Deployment
 
 Before deploying to production:
 
