@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.main import app
 from app.models import User
@@ -8,7 +9,7 @@ from app.auth import get_password_hash
 
 
 @pytest.fixture
-def admin_token(test_db: Session):
+def admin_token(db: Session):
     """Create an admin user and return a token for that user."""
     # Create admin user
     admin = User(
@@ -16,10 +17,11 @@ def admin_token(test_db: Session):
         hashed_password=get_password_hash("adminpass"),
         name="Admin User",
         role="admin",
-        is_active=True
+        is_active=True,
+        created_at=datetime.utcnow()
     )
-    test_db.add(admin)
-    test_db.commit()
+    db.add(admin)
+    db.commit()
     
     # Get token for admin
     client = TestClient(app)
@@ -32,7 +34,7 @@ def admin_token(test_db: Session):
 
 
 @pytest.fixture
-def test_user(test_db: Session):
+def test_user(db: Session):
     """Create a test user for verification testing."""
     user = User(
         email="testuser@example.com",
@@ -40,15 +42,16 @@ def test_user(test_db: Session):
         name="Test User",
         role="user",
         is_active=True,
-        is_email_verified=False
+        is_email_verified=False,
+        created_at=datetime.utcnow()
     )
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 
-def test_admin_toggle_verification(test_db: Session, admin_token, test_user):
+def test_admin_toggle_verification(db: Session, admin_token, test_user):
     """Test that an admin can toggle a user's email verification status."""
     client = TestClient(app)
     
@@ -66,7 +69,7 @@ def test_admin_toggle_verification(test_db: Session, admin_token, test_user):
     assert response.json()["success"] is True
     
     # Refresh user from database
-    test_db.refresh(test_user)
+    db.refresh(test_user)
     
     # Verify that the status was toggled to True
     assert test_user.is_email_verified is True
@@ -82,7 +85,7 @@ def test_admin_toggle_verification(test_db: Session, admin_token, test_user):
     assert response.json()["success"] is True
     
     # Refresh user from database
-    test_db.refresh(test_user)
+    db.refresh(test_user)
     
     # Verify that the status was toggled back to False
     assert test_user.is_email_verified is False
@@ -90,7 +93,7 @@ def test_admin_toggle_verification(test_db: Session, admin_token, test_user):
     # Check that verification token is cleared when setting to unverified
     test_user.verification_token = "test-token"
     test_user.is_email_verified = True
-    test_db.commit()
+    db.commit()
     
     # Toggle to unverified
     response = client.post(
@@ -99,13 +102,13 @@ def test_admin_toggle_verification(test_db: Session, admin_token, test_user):
     )
     
     # Refresh user from database
-    test_db.refresh(test_user)
+    db.refresh(test_user)
     
     # Verify token is cleared
     assert test_user.verification_token is None
 
 
-def test_non_admin_cannot_toggle_verification(test_db: Session, test_user):
+def test_non_admin_cannot_toggle_verification(db: Session, test_user):
     """Test that non-admin users cannot toggle verification status."""
     # Create regular user
     regular_user = User(
@@ -113,10 +116,11 @@ def test_non_admin_cannot_toggle_verification(test_db: Session, test_user):
         hashed_password=get_password_hash("password"),
         name="Regular User",
         role="user",
-        is_active=True
+        is_active=True,
+        created_at=datetime.utcnow()
     )
-    test_db.add(regular_user)
-    test_db.commit()
+    db.add(regular_user)
+    db.commit()
     
     # Get token for regular user
     client = TestClient(app)
