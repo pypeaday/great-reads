@@ -24,8 +24,10 @@
         @media (max-width: 640px) {
             .book-card {
                 min-height: 120px; /* Ensure minimum height on mobile */
-                width: 100% !important; /* Force full width on smallest screens */
-                margin-bottom: 8px;
+                min-width: 85% !important; /* Set width for horizontal scrolling on mobile */
+                max-width: 85% !important;
+                flex: 0 0 auto;
+                margin-right: 8px;
             }
         }
         @media (min-width: 641px) and (max-width: 768px) {
@@ -36,6 +38,21 @@
         @media (min-width: 769px) and (max-width: 1024px) {
             .book-card {
                 width: calc(33.333% - 12px) !important; /* Three cards per row on medium screens */
+            }
+        }
+        /* Mobile scroll container styles */
+        @media (max-width: 640px) {
+            .book-list {
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 12px;
+            }
+            .book-list-container {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                padding-bottom: 4px;
             }
         }
         .book-card::after {
@@ -86,6 +103,30 @@
                 display: flex;
                 flex-wrap: wrap;
                 justify-content: space-between;
+            }
+            /* Mobile scroll indicators */
+            .mobile-scroll-indicator {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                display: flex;
+                justify-content: center;
+                padding: 0 8px;
+                z-index: 5;
+            }
+            .mobile-scroll-indicator .indicator-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background-color: var(--theme-bg2);
+                opacity: 0.5;
+                margin: 0 3px;
+            }
+            .mobile-scroll-indicator .indicator-dot.active {
+                opacity: 1;
+                background-color: var(--theme-accent);
             }
         }
     </style>
@@ -236,7 +277,7 @@
                 
                 <!-- Book Cards Container -->
                 <div class="relative group">
-                    <!-- Scroll indicators - visible on larger screens, hidden on mobile where touch scrolling is natural -->
+                    <!-- Scroll indicators - visible on larger screens -->
                     <div class="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-theme-bg2/90 rounded-full items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" onclick="scrollContainer('book-list-{{ status.name }}', -300)">
                         <i class="fas fa-chevron-left"></i>
                     </div>
@@ -244,7 +285,15 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
                     
-                    <div class="p-2 sm:p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-theme-bg2 scrollbar-track-transparent book-list" id="book-list-{{ status.name }}" data-status="{{ status.name }}">
+                    <!-- Mobile scroll buttons - visible only on small screens -->
+                    <div class="md:hidden absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10" onclick="scrollContainer('book-list-{{ status.name }}', -200)">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </div>
+                    <div class="md:hidden absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-theme-bg2/90 rounded-full flex items-center justify-center text-theme-fg1 cursor-pointer shadow-md z-10" onclick="scrollContainer('book-list-{{ status.name }}', 200)">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </div>
+                    
+                    <div class="p-2 sm:p-3 overflow-x-auto scrollbar-thin scrollbar-thumb-theme-bg2 scrollbar-track-transparent book-list" id="book-list-{{ status.name }}" data-status="{{ status.name }}" onscroll="updateScrollIndicators(this, 'indicator-{{ status.name }}')">
                         <div class="flex flex-wrap md:flex-nowrap gap-3 sm:gap-4 pb-2 snap-x book-list-container">
                     {% if status in books_by_status %}
                     {% for book in books_by_status[status] %}
@@ -329,6 +378,17 @@
                     {% endif %}
 
                         </div>
+                        
+                        <!-- Mobile scroll indicator dots -->
+                        <div class="mobile-scroll-indicator md:hidden" id="indicator-{{ status.name }}">
+                            {% set book_count = books_by_status.get(status, [])|length %}
+                            {% if book_count > 1 %}
+                                {% set dot_count = 5 if book_count > 5 else book_count %}
+                                {% for i in range(dot_count) %}
+                                    <div class="indicator-dot {% if loop.first %}active{% endif %}"></div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -342,13 +402,50 @@
                 if (container) {
                     // On mobile, we'll scroll less distance for better control
                     const isMobile = window.innerWidth < 768;
-                    const adjustedAmount = isMobile ? scrollAmount / 2 : scrollAmount;
+                    const adjustedAmount = isMobile ? scrollAmount / 1.5 : scrollAmount;
                     
                     container.scrollBy({
                         left: adjustedAmount,
                         behavior: 'smooth'
                     });
+                    
+                    // Update scroll indicators after scrolling
+                    if (isMobile) {
+                        const statusName = container.dataset.status;
+                        updateScrollIndicators(container, `indicator-${statusName}`);
+                    }
                 }
+            }
+            
+            // Function to update scroll indicator dots on mobile
+            function updateScrollIndicators(container, indicatorId) {
+                if (window.innerWidth >= 768) return; // Only for mobile
+                
+                const indicator = document.getElementById(indicatorId);
+                if (!indicator) return;
+                
+                const dots = indicator.querySelectorAll('.indicator-dot');
+                if (dots.length === 0) return;
+                
+                // Calculate which dot should be active based on scroll position
+                const scrollPosition = container.scrollLeft;
+                const maxScroll = container.scrollWidth - container.clientWidth;
+                const scrollRatio = Math.min(scrollPosition / maxScroll, 1);
+                
+                // Determine which dot should be active
+                const activeDotIndex = Math.min(
+                    Math.floor(scrollRatio * dots.length),
+                    dots.length - 1
+                );
+                
+                // Update active dot
+                dots.forEach((dot, index) => {
+                    if (index === activeDotIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
             }
             
             // Drag and drop functionality
@@ -358,6 +455,46 @@
             
             // Toggle filter panel visibility
             document.addEventListener('DOMContentLoaded', function() {
+                // Initialize scroll indicators for all book lists
+                const bookLists = document.querySelectorAll('.book-list');
+                bookLists.forEach(list => {
+                    const statusName = list.dataset.status;
+                    updateScrollIndicators(list, `indicator-${statusName}`);
+                    
+                    // Add touch event listeners for mobile swipe
+                    if (window.innerWidth < 768) {
+                        let startX, startTime;
+                        
+                        list.addEventListener('touchstart', function(e) {
+                            startX = e.touches[0].clientX;
+                            startTime = new Date().getTime();
+                        }, { passive: true });
+                        
+                        list.addEventListener('touchend', function(e) {
+                            if (!startX) return;
+                            
+                            const endX = e.changedTouches[0].clientX;
+                            const endTime = new Date().getTime();
+                            const diffX = endX - startX;
+                            const diffTime = endTime - startTime;
+                            
+                            // If it was a quick swipe
+                            if (diffTime < 300 && Math.abs(diffX) > 50) {
+                                // Swipe left
+                                if (diffX < 0) {
+                                    scrollContainer(`book-list-${statusName}`, 200);
+                                } 
+                                // Swipe right
+                                else {
+                                    scrollContainer(`book-list-${statusName}`, -200);
+                                }
+                            }
+                            
+                            startX = null;
+                        }, { passive: true });
+                    }
+                });
+                
                 const toggleButton = document.getElementById('toggle-filters');
                 const filterPanel = document.getElementById('filter-panel');
                 const filterText = document.getElementById('filter-text');
@@ -377,7 +514,6 @@
                 // Add event listeners for drag and drop
                 // Update to use book-row instead of book-column
                 const rows = document.querySelectorAll('.book-row');
-                const bookLists = document.querySelectorAll('.book-list');
                 
                 // Add visual cue for dragging
                 const bookCards = document.querySelectorAll('.book-card');
