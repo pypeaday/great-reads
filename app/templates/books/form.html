@@ -10,9 +10,7 @@
         <form method="POST" 
               action="{% if is_new %}{{ url_for('create_book') }}{% else %}{{ url_for('update_book', book_id=book.id) }}{% endif %}"
               class="bg-bg1 rounded-lg shadow-lg p-6">
-            {% if not is_new %}
-            <input type="hidden" name="_method" value="PUT">
-            {% endif %}
+            <!-- Form now uses POST method directly -->
 
             <!-- Title -->
             <div class="mb-4">

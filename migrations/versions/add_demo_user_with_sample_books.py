@@ -7,6 +7,7 @@ Create Date: 2025-03-31 09:42:37.000000
 """
 
 import enum
+import json
 import random
 from collections.abc import Sequence
 from datetime import datetime
@@ -116,7 +117,38 @@ SAMPLE_BOOKS = [
     {"title": "Educated", "author": "Tara Westover"},
     {"title": "Becoming", "author": "Michelle Obama"},
     {"title": "The Power of Habit", "author": "Charles Duhigg"},
-    {"title": "Atomic Habits", "author": "James Clear"}
+    {"title": "Atomic Habits", "author": "James Clear"},
+    {"title": "The Midnight Library", "author": "Matt Haig"},
+    {"title": "Project Hail Mary", "author": "Andy Weir"},
+    {"title": "The Seven Husbands of Evelyn Hugo", "author": "Taylor Jenkins Reid"},
+    {"title": "The Invisible Life of Addie LaRue", "author": "V.E. Schwab"},
+    {"title": "Circe", "author": "Madeline Miller"},
+    {"title": "The Song of Achilles", "author": "Madeline Miller"},
+    {"title": "Normal People", "author": "Sally Rooney"},
+    {"title": "The Thursday Murder Club", "author": "Richard Osman"},
+    {"title": "Klara and the Sun", "author": "Kazuo Ishiguro"},
+    {"title": "The Vanishing Half", "author": "Brit Bennett"},
+    {"title": "A Gentleman in Moscow", "author": "Amor Towles"},
+    {"title": "The Lincoln Highway", "author": "Amor Towles"},
+    {"title": "The Four Winds", "author": "Kristin Hannah"},
+    {"title": "The Nightingale", "author": "Kristin Hannah"},
+    {"title": "The Overstory", "author": "Richard Powers"},
+    {"title": "Hamnet", "author": "Maggie O'Farrell"},
+    {"title": "The House in the Cerulean Sea", "author": "TJ Klune"},
+    {"title": "Pachinko", "author": "Min Jin Lee"},
+    {"title": "The Fifth Season", "author": "N.K. Jemisin"},
+    {"title": "The Three-Body Problem", "author": "Liu Cixin"},
+    {"title": "Exhalation", "author": "Ted Chiang"},
+    {"title": "Children of Time", "author": "Adrian Tchaikovsky"},
+    {"title": "The Priory of the Orange Tree", "author": "Samantha Shannon"},
+    {"title": "The City We Became", "author": "N.K. Jemisin"},
+    {"title": "Mexican Gothic", "author": "Silvia Moreno-Garcia"},
+    {"title": "The Starless Sea", "author": "Erin Morgenstern"},
+    {"title": "The Water Dancer", "author": "Ta-Nehisi Coates"},
+    {"title": "On Earth We're Briefly Gorgeous", "author": "Ocean Vuong"},
+    {"title": "The Dutch House", "author": "Ann Patchett"},
+    {"title": "The Testaments", "author": "Margaret Atwood"},
+    {"title": "The Nickel Boys", "author": "Colson Whitehead"}
 ]
 
 # Sample notes
@@ -148,11 +180,22 @@ def upgrade() -> None:
         # Ensure the user role exists
         user_role = session.query(Role).filter(Role.name == "user").first()
         if not user_role:
-            # Create user role if it doesn't exist
+            # Create user role if it doesn't exist with proper permissions
+            user_permissions = {
+                "view_users": False,
+                "manage_users": False,
+                "view_roles": False,
+                "manage_roles": False,
+                "view_system": False,
+                "manage_system": False,
+                "view_all_books": False,
+                "manage_all_books": False,
+                "manage_own_books": True,
+            }
             user_role = Role(
                 name="user",
                 description="Regular user with standard permissions",
-                permissions="{}",
+                permissions=json.dumps(user_permissions),
                 created_at=datetime.utcnow()
             )
             session.add(user_role)
@@ -167,11 +210,26 @@ def upgrade() -> None:
         if demo_user:
             print(f"Demo user exists: {demo_email} - Resetting books")
             # Count books before deletion
-            book_count = session.query(Book).filter(Book.user_id == demo_user.id).count()
+            book_count = session.query(Book).filter(
+                Book.user_id == demo_user.id
+            ).count()
             # Delete all books for the demo user
             session.query(Book).filter(Book.user_id == demo_user.id).delete()
             session.flush()
             print(f"Deleted {book_count} existing books for demo user")
+            # Also ensure the user role has the correct permissions
+            has_permission = False
+            if user_role:
+                permissions = json.loads(user_role.permissions)
+                has_permission = permissions.get("manage_own_books", False)
+            if user_role and not has_permission:
+                user_permissions = json.loads(
+                    user_role.permissions
+                )
+                user_permissions["manage_own_books"] = True
+                user_role.permissions = json.dumps(user_permissions)
+                session.flush()
+                print("Updated user role permissions to include manage_own_books")
         else:
 
             # Create new demo user
@@ -193,18 +251,32 @@ def upgrade() -> None:
         # Current time for reference
         now = datetime.utcnow()
 
-        # Add 30 random books to the demo user
-        selected_books = random.sample(SAMPLE_BOOKS, 30)
+        # Add 50 random books to the demo user
+        selected_books = random.sample(SAMPLE_BOOKS, 50)
 
         for book_data in selected_books:
-            # Randomly select a status
-            status = random.choice(list(BookStatus))
+            # Weighted selection for status - make COMPLETED more common
+            status_weights = {
+                BookStatus.COMPLETED: 0.6,  # 60% chance for COMPLETED
+                BookStatus.READING: 0.15,   # 15% chance for READING
+                BookStatus.TO_READ: 0.1,    # 10% chance for TO_READ
+                BookStatus.ON_HOLD: 0.1,    # 10% chance for ON_HOLD
+                BookStatus.DNF: 0.05        # 5% chance for DNF
+            }
+            status = random.choices(
+                population=list(status_weights.keys()),
+                weights=list(status_weights.values()),
+                k=1
+            )[0]
 
             # Set appropriate dates based on status
             start_date = None
             completion_date = None
 
-            if status in [BookStatus.READING, BookStatus.COMPLETED, BookStatus.DNF, BookStatus.ON_HOLD]:
+            if status in [
+                BookStatus.READING, BookStatus.COMPLETED,
+                BookStatus.DNF, BookStatus.ON_HOLD
+            ]:
                 # For books that have been started, set a start date in the past
                 days_ago = random.randint(10, 365)
                 start_date = now - timedelta(days=days_ago)
@@ -218,8 +290,15 @@ def upgrade() -> None:
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
-                # 0-3 rating for completed books
-                rating = random.randint(0, 3)
+                # 0-3 rating for completed books with a distribution
+                # favoring higher ratings
+                # Weights for ratings 0-3
+                rating_weights = [0.1, 0.2, 0.3, 0.4]
+                rating = random.choices(
+                    population=range(4),
+                    weights=rating_weights,
+                    k=1
+                )[0]
 
             # Random notes
             notes = random.choice(SAMPLE_NOTES) if random.random() > 0.3 else None
@@ -243,7 +322,7 @@ def upgrade() -> None:
 
         # Commit all changes
         session.commit()
-        print("Successfully added demo user with 30 sample books")
+        print("Successfully added demo user with 50 sample books")
 
     except Exception as e:
         session.rollback()

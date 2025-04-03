@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to populate the book tracking app with random books.
-This script adds 20 random books with various statuses and ratings to the admin account.
+This script adds 50 random books with various statuses and ratings to the admin account.
 """
 
 import os
@@ -50,7 +50,38 @@ SAMPLE_BOOKS = [
     {"title": "Educated", "author": "Tara Westover"},
     {"title": "Becoming", "author": "Michelle Obama"},
     {"title": "The Power of Habit", "author": "Charles Duhigg"},
-    {"title": "Atomic Habits", "author": "James Clear"}
+    {"title": "Atomic Habits", "author": "James Clear"},
+    {"title": "The Midnight Library", "author": "Matt Haig"},
+    {"title": "Project Hail Mary", "author": "Andy Weir"},
+    {"title": "The Seven Husbands of Evelyn Hugo", "author": "Taylor Jenkins Reid"},
+    {"title": "The Invisible Life of Addie LaRue", "author": "V.E. Schwab"},
+    {"title": "Circe", "author": "Madeline Miller"},
+    {"title": "The Song of Achilles", "author": "Madeline Miller"},
+    {"title": "Normal People", "author": "Sally Rooney"},
+    {"title": "The Thursday Murder Club", "author": "Richard Osman"},
+    {"title": "Klara and the Sun", "author": "Kazuo Ishiguro"},
+    {"title": "The Vanishing Half", "author": "Brit Bennett"},
+    {"title": "A Gentleman in Moscow", "author": "Amor Towles"},
+    {"title": "The Lincoln Highway", "author": "Amor Towles"},
+    {"title": "The Four Winds", "author": "Kristin Hannah"},
+    {"title": "The Nightingale", "author": "Kristin Hannah"},
+    {"title": "The Overstory", "author": "Richard Powers"},
+    {"title": "Hamnet", "author": "Maggie O'Farrell"},
+    {"title": "The House in the Cerulean Sea", "author": "TJ Klune"},
+    {"title": "Pachinko", "author": "Min Jin Lee"},
+    {"title": "The Fifth Season", "author": "N.K. Jemisin"},
+    {"title": "The Three-Body Problem", "author": "Liu Cixin"},
+    {"title": "Exhalation", "author": "Ted Chiang"},
+    {"title": "Children of Time", "author": "Adrian Tchaikovsky"},
+    {"title": "The Priory of the Orange Tree", "author": "Samantha Shannon"},
+    {"title": "The City We Became", "author": "N.K. Jemisin"},
+    {"title": "Mexican Gothic", "author": "Silvia Moreno-Garcia"},
+    {"title": "The Starless Sea", "author": "Erin Morgenstern"},
+    {"title": "The Water Dancer", "author": "Ta-Nehisi Coates"},
+    {"title": "On Earth We're Briefly Gorgeous", "author": "Ocean Vuong"},
+    {"title": "The Dutch House", "author": "Ann Patchett"},
+    {"title": "The Testaments", "author": "Margaret Atwood"},
+    {"title": "The Nickel Boys", "author": "Colson Whitehead"}
 ]
 
 # Sample notes
@@ -102,15 +133,31 @@ def create_random_books(user_id, num_books=20):
         now = datetime.utcnow()
 
         # Create and add books
-        for i, book_data in enumerate(selected_books):
-            # Randomly select a status
-            status = random.choice(list(BookStatus))
+        for book_data in selected_books:
+            # Weighted selection for status - make COMPLETED more common
+            status_weights = {
+                BookStatus.COMPLETED: 0.6,  # 60% chance for COMPLETED
+                BookStatus.READING: 0.15,   # 15% chance for READING
+                BookStatus.TO_READ: 0.1,    # 10% chance for TO_READ
+                BookStatus.ON_HOLD: 0.1,    # 10% chance for ON_HOLD
+                BookStatus.DNF: 0.05       # 5% chance for DNF
+            }
+            status = random.choices(
+                population=list(status_weights.keys()),
+                weights=list(status_weights.values()),
+                k=1
+            )[0]
 
             # Set appropriate dates based on status
             start_date = None
             completion_date = None
 
-            if status in [BookStatus.READING, BookStatus.COMPLETED, BookStatus.DNF, BookStatus.ON_HOLD]:
+            if status in [
+                BookStatus.READING,
+                BookStatus.COMPLETED,
+                BookStatus.DNF,
+                BookStatus.ON_HOLD
+            ]:
                 # For books that have been started, set a start date in the past
                 days_ago = random.randint(10, 365)
                 start_date = now - timedelta(days=days_ago)
@@ -119,13 +166,22 @@ def create_random_books(user_id, num_books=20):
                 # For completed or DNF books, set a completion date after the start date
                 if start_date:
                     days_to_complete = random.randint(1, min(days_ago, 60))
-                    completion_date = start_date + timedelta(days=days_to_complete)
+                    completion_date = start_date + timedelta(
+                        days=days_to_complete
+                    )
 
             # Set rating based on status
             rating = None
             if status == BookStatus.COMPLETED:
-                # 0-3 rating for completed books
-                rating = random.randint(0, 3)
+                # 0-3 rating for completed books with a distribution
+                # favoring higher ratings
+                # Weights for ratings 0-3
+                rating_weights = [0.1, 0.2, 0.3, 0.4]
+                rating = random.choices(
+                    population=range(4),
+                    weights=rating_weights,
+                    k=1
+                )[0]
 
             # Random notes
             notes = random.choice(SAMPLE_NOTES) if random.random() > 0.3 else None
@@ -145,7 +201,10 @@ def create_random_books(user_id, num_books=20):
             )
 
             db.add(book)
-            print(f"Added book: {book.title} by {book.author} (Status: {book.status.value})")
+            print(
+                f"Added book: {book.title} by {book.author} "
+                f"(Status: {book.status.value})"
+            )
 
         db.commit()
         print(f"\nSuccessfully added {num_books} books to the database!")
@@ -165,7 +224,7 @@ def main():
     admin_user = login_admin()
 
     # Create random books for the admin user
-    create_random_books(admin_user.id, 20)
+    create_random_books(admin_user.id, 50)
 
     print("\nDone! You can now view the books in the app.")
 

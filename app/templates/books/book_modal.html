@@ -1,10 +1,16 @@
 <!-- Book Modal Template -->
 <div class="p-6">
+    
     <!-- Title and Author -->
     <div class="mb-6">
-        <form hx-put="/books/{{ book.id }}/inline-update" 
-              hx-target="#modal-content" 
-              hx-swap="innerHTML">
+        <!-- Title Form -->
+        <form hx-post="/books/{{ book.id }}/inline-update" 
+              hx-target="#book-{{ book.id }}" 
+              hx-swap="outerHTML"
+              hx-boost="false"
+              enctype="multipart/form-data"
+              hx-on::after-request="closeModal(event)"
+              onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="title">
             <div class="mb-4">
                 <label for="title" class="block text-sm font-medium text-theme-fg1 mb-1">Title</label>
@@ -12,6 +18,21 @@
                        class="w-full border rounded px-3 py-2 bg-theme-bg1 text-theme-fg border-theme-bg3 focus:border-theme-accent">
             </div>
             
+            <div class="flex justify-end mb-4">
+                <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
+                    Update Title
+                </button>
+            </div>
+        </form>
+        
+        <!-- Author Form -->
+        <form hx-post="/books/{{ book.id }}/inline-update" 
+              hx-target="#book-{{ book.id }}" 
+              hx-swap="outerHTML"
+              hx-boost="false"
+              enctype="multipart/form-data"
+              hx-on::after-request="closeModal(event)"
+              onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="author">
             <div class="mb-4">
                 <label for="author" class="block text-sm font-medium text-theme-fg1 mb-1">Author</label>
@@ -21,7 +42,7 @@
             
             <div class="flex justify-end">
                 <button type="submit" class="px-4 py-2 bg-theme-accent text-white rounded hover:opacity-90 transition-opacity">
-                    Save Changes
+                    Update Author
                 </button>
             </div>
         </form>
@@ -30,9 +51,13 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Status -->
         <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
-            <form hx-put="/books/{{ book.id }}/inline-update" 
-                  hx-target="#modal-content" 
-                  hx-swap="innerHTML">
+            <form hx-post="/books/{{ book.id }}/inline-update"  
+                  hx-target="#book-{{ book.id }}" 
+                  hx-swap="outerHTML"
+                  hx-boost="false"
+                  enctype="multipart/form-data"
+                  hx-on::after-request="closeModal()"
+                  onsubmit="logFormData(event)">
                 <input type="hidden" name="update_type" value="status">
                 <div class="mb-4">
                     <label for="status" class="block text-sm font-medium text-theme-fg1 mb-1">Status</label>
@@ -56,9 +81,13 @@
         
         <!-- Rating -->
         <div class="bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
-            <form hx-put="/books/{{ book.id }}/inline-update" 
-                  hx-target="#modal-content" 
-                  hx-swap="innerHTML">
+            <form hx-post="/books/{{ book.id }}/inline-update"  
+                  hx-target="#book-{{ book.id }}" 
+                  hx-swap="outerHTML"
+                  hx-boost="false"
+                  enctype="multipart/form-data"
+                  hx-on::after-request="closeModal()"
+                  onsubmit="logFormData(event)">
                 <input type="hidden" name="update_type" value="rating">
                 <div class="mb-4">
                     <label for="rating" class="block text-sm font-medium text-theme-fg1 mb-1">Rating</label>
@@ -82,9 +111,13 @@
     
     <!-- Notes -->
     <div class="mt-6 bg-theme-bg1 rounded-lg p-4 border border-theme-bg2">
-        <form hx-put="/books/{{ book.id }}/inline-update" 
-              hx-target="#modal-content" 
-              hx-swap="innerHTML">
+        <form hx-post="/books/{{ book.id }}/inline-update" 
+              hx-target="#book-{{ book.id }}" 
+              hx-swap="outerHTML"
+              hx-boost="false"
+              enctype="multipart/form-data"
+              hx-on::after-request="closeModal(event)"
+              onsubmit="logFormData(event)">
             <input type="hidden" name="update_type" value="notes">
             <div class="mb-4">
                 <label for="notes" class="block text-sm font-medium text-theme-fg1 mb-1">Notes</label>

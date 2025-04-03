@@ -1,4 +1,5 @@
 import enum
+import datetime
 
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -68,8 +69,8 @@ class Book(Base):
     start_date = Column(DateTime)
     completion_date = Column(DateTime)
     rating = Column(Integer)  # 0-3 rating system
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.datetime.now(datetime.UTC))
+    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.now(datetime.UTC), onupdate=datetime.datetime.now(datetime.UTC))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Relationships

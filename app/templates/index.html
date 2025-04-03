@@ -170,8 +170,6 @@
                                 <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★☆☆</option>
                                 <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★☆</option>
                                 <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★</option>
-                                <option value="4" {% if rating_filter == '4' %}selected{% endif %}>★★★★</option>
-                                <option value="5" {% if rating_filter == '5' %}selected{% endif %}>★★★★★</option>
                             </select>
                         </div>
                     </div>
@@ -414,7 +412,7 @@
                         
                         // Update book status via API
                         fetch(`/books/${bookId}/status`, {
-                            method: 'PUT',
+                            method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
@@ -467,7 +465,7 @@
                             
                             // Update book status via API
                             fetch(`/books/${bookId}/status`, {
-                                method: 'PUT',
+                                method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },
@@ -739,15 +737,13 @@
                     .then(html => {
                         modalContent.innerHTML = html;
                         
-                        // Prevent any forms inside the modal from submitting to the main page
-                        const modalForms = modalContent.querySelectorAll('form');
+                        // Don't interfere with HTMX forms
+                        const modalForms = modalContent.querySelectorAll('form:not([hx-post])');
                         modalForms.forEach(form => {
                             form.addEventListener('submit', function(e) {
-                                // If the form doesn't have a specific target, prevent it from submitting
-                                if (!form.getAttribute('target') && !form.getAttribute('hx-target')) {
-                                    e.preventDefault();
-                                    console.log('Prevented form submission inside modal');
-                                }
+                                // Only prevent non-HTMX forms
+                                e.preventDefault();
+                                console.log('Prevented non-HTMX form submission inside modal');
                             });
                         });
                     })
@@ -761,6 +757,104 @@
                 modal.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
             }
+            
+            // Debug function to log form data
+            function logFormData(event) {
+                const form = event.target;
+                const formData = new FormData(form);
+                console.log('Form submission:', form.getAttribute('action') || form.getAttribute('hx-post'));
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                // Don't prevent default - let HTMX handle the submission
+            }
+            
+            // Intercept all form submissions for book updates
+            document.addEventListener('submit', function(event) {
+                const form = event.target;
+                const isBookUpdateForm = form.getAttribute('hx-post') && 
+                                         form.getAttribute('hx-post').includes('/inline-update');
+                
+                if (isBookUpdateForm) {
+                    event.preventDefault(); // Prevent the default form submission
+                    console.log('Intercepted book update form submission');
+                    
+                    // Get the form data
+                    const formData = new FormData(form);
+                    const url = form.getAttribute('hx-post');
+                    const target = form.getAttribute('hx-target');
+                    
+                    // Log the form data for debugging
+                    console.log('Form submission to:', url);
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+                    
+                    // Send the form data using fetch with the correct content type
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            // Don't set Content-Type here - the browser will set it correctly with the boundary
+                            // for multipart/form-data when using FormData
+                        }
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        // Update the target element with the response HTML
+                        const targetElement = document.querySelector(target);
+                        if (targetElement) {
+                            targetElement.outerHTML = html;
+                            console.log('Updated target element with response HTML');
+                        }
+                        
+                        // Close the modal
+                        closeModal();
+                    })
+                    .catch(error => {
+                        console.error('Error submitting form:', error);
+                    });
+                }
+            });
+            
+            // Enhanced HTMX event handling for debugging
+            document.body.addEventListener('htmx:beforeRequest', function(event) {
+                console.log('HTMX Request Starting:', event.detail);
+                console.log('Request URL:', event.detail.path || event.detail.requestConfig.path);
+                console.log('Request Target:', event.detail.target.id);
+            });
+            
+            document.body.addEventListener('htmx:afterRequest', function(event) {
+                console.log('HTMX Request Completed:', event.detail);
+                console.log('Response Status:', event.detail.xhr.status);
+                console.log('Response Headers:', event.detail.xhr.getAllResponseHeaders());
+            });
+            
+            document.body.addEventListener('htmx:responseError', function(event) {
+                console.error('HTMX Response Error:', event.detail);
+                console.error('Status:', event.detail.xhr.status);
+                console.error('Error:', event.detail.xhr.responseText);
+            });
+            
+            // Listen for HTMX events
+            document.body.addEventListener('htmx:afterOnLoad', function(event) {
+                console.log('HTMX Content Loaded:', event.detail);
+                
+                // Check if the response has the closeModal trigger
+                if (event.detail.xhr && event.detail.xhr.getResponseHeader('HX-Trigger')) {
+                    const triggers = JSON.parse(event.detail.xhr.getResponseHeader('HX-Trigger'));
+                    console.log('HX-Trigger:', triggers);
+                    if (triggers && triggers.closeModal) {
+                        closeModal();
+                    }
+                }
+            });
         </script>
         
         {% if not books_by_status %}
