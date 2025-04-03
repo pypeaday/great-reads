@@ -12,10 +12,28 @@
             <p class="text-lg" style="color: {{ theme.fg }};">
                 <span class="font-medium" style="color: {{ theme.fg1 }};">Email:</span> 
                 {{ user.email }}
+                {% if user.is_email_verified %}
+                    <span class="ml-2 px-2 py-1 text-xs rounded-full" style="background-color: {{ theme.success }}; color: white;">
+                        Verified
+                    </span>
+                {% else %}
+                    <span class="ml-2 px-2 py-1 text-xs rounded-full" style="background-color: {{ theme.fg2 }}; color: white;">
+                        Not Verified
+                    </span>
+                {% endif %}
             </p>
             <p class="text-sm mt-1" style="color: {{ theme.fg1 }};">
                 Account created: {{ user.created_at.strftime('%Y-%m-%d') }}
             </p>
+            {% if not user.is_email_verified %}
+            <div class="mt-3 p-3 rounded-md" style="background-color: {{ theme.bg2 }}; border-left: 4px solid {{ theme.accent }};">
+                <p class="text-sm" style="color: {{ theme.fg }};">Email verification is planned for a future release. When available, you'll be able to verify your email to enhance account security.</p>
+                <button disabled class="mt-2 px-3 py-1 text-sm rounded-md opacity-60 cursor-not-allowed" style="background-color: {{ theme.accent }}; color: white;">
+                    Send Verification Email
+                </button>
+                <p class="text-xs mt-1 italic" style="color: {{ theme.fg2 }};">This feature is coming soon!</p>
+            </div>
+            {% endif %}
         </div>
         
         <div class="flex space-x-4">
