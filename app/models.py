@@ -52,6 +52,10 @@ class User(Base):
     role = Column(
         String(20), ForeignKey("roles.name"), default="user", nullable=False
     )  # References role.name
+    # Email verification fields
+    is_email_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), unique=True, nullable=True)
+    verification_token_expires = Column(DateTime, nullable=True)
 
     # Relationships
     books = relationship("Book", back_populates="user")

@@ -233,6 +233,33 @@ async def update_user(
     )
 
 
+@router.post("/users/{user_id}/toggle-verification")
+@requires_permission("manage_users")
+async def toggle_user_verification(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    """Toggle a user's email verification status."""
+    # Get the user
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Toggle verification status
+    user.is_email_verified = not user.is_email_verified
+    
+    # Clear verification token if setting to unverified
+    if not user.is_email_verified:
+        user.verification_token = None
+        user.verification_token_expires = None
+    
+    db.commit()
+    
+    return {"success": True, "message": f"Email verification status toggled for {user.email}"}
+
+
 @router.post("/users/{user_id}/reset-password")
 @requires_permission("manage_users")
 async def reset_user_password(
