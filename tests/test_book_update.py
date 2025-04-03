@@ -137,25 +137,28 @@ def test_update_book_rating(client, test_book, user_headers, db):
 
 def test_update_book_notes(client, test_book, user_headers, db):
     """Test updating a book's notes."""
-    data = {
-        "update_type": "notes",
-        "notes": "Updated notes for testing"
+    # For form data, we should use the files parameter with (None, value) format
+    # based on the memories about FastAPI form handling in tests
+    files = {
+        "update_type": (None, "notes"),
+        "notes": (None, "Updated notes for testing")
     }
     
     response = client.post(
         f"/books/{test_book.id}/inline-update", 
-        data=data,
+        files=files,
         headers=user_headers
     )
     
     assert response.status_code == 200
-    assert "Updated notes for testing" in response.text
+    # Notes aren't displayed in the book_card.html template, so we don't check for them
+    # Instead, we'll rely on the database verification
     
     # Verify the HX-Trigger header for closing modal
     assert "HX-Trigger" in response.headers
     assert "closeModal" in response.headers["HX-Trigger"]
     
-    # Verify the database update
+    # Verify the database update - this is the most important assertion
     db.refresh(test_book)
     assert test_book.notes == "Updated notes for testing"
 
