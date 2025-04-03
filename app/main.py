@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
 # Base imports
 from . import auth
@@ -42,7 +43,7 @@ load_dotenv()
 app = FastAPI(
     title="greatReads",
     # We'll protect these routes with our middleware
-    docs_url="/docs", 
+    docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
@@ -65,6 +66,13 @@ async def handle_htmx_methods(request: Request, call_next):
             request.scope["method"] = form["_method"]
     return await call_next(request)
 
+
+# Add SessionMiddleware for captcha functionality
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY", "supersecretkey"),
+    max_age=1800  # 30 minutes session
+)
 
 # Add CORS middleware
 app.add_middleware(

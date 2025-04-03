@@ -81,9 +81,22 @@ async def login_for_access_token(request: Request, db: Session = Depends(databas
 async def register_page(request: Request):
     """Display registration page."""
     theme, current_theme = get_current_theme(request)
+    
+    # Generate captcha for the registration form
+    from .utils import generate_captcha
+    captcha_challenge, captcha_answer = generate_captcha()
+    
+    # Store captcha answer in session
+    request.session["captcha_answer"] = captcha_answer
+    
     response = templates.TemplateResponse(
         "register.html",
-        {"request": request, "theme": theme, "current_theme": current_theme},
+        {
+            "request": request, 
+            "theme": theme, 
+            "current_theme": current_theme,
+            "captcha_challenge": captcha_challenge,
+        },
     )
     set_theme_cookie(response, current_theme)
     return response
@@ -95,13 +108,43 @@ async def register_user(
     email: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
+    captcha: str = Form(...),
     db: Session = Depends(database.get_db),
 ):
     """Register a new user."""
     theme, current_theme = get_current_theme(request)
+    
+    # Generate a new captcha for the form in case of validation errors
+    from .utils import generate_captcha
+    new_captcha_challenge, new_captcha_answer = generate_captcha()
+    
+    # Get the stored captcha answer from session
+    stored_captcha_answer = request.session.get("captcha_answer")
+    
+    # Validate captcha
+    if not stored_captcha_answer or captcha.upper() != stored_captcha_answer:
+        # Store the new captcha answer for the next attempt
+        request.session["captcha_answer"] = new_captcha_answer
+        
+        response = templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "theme": theme,
+                "current_theme": current_theme,
+                "error": "Invalid security code",
+                "captcha_error": "Please enter the correct security code",
+                "captcha_challenge": new_captcha_challenge,
+            },
+        )
+        set_theme_cookie(response, current_theme)
+        return response
 
     # Validate inputs
     if password != confirm_password:
+        # Store the new captcha answer for the next attempt
+        request.session["captcha_answer"] = new_captcha_answer
+        
         response = templates.TemplateResponse(
             "register.html",
             {
@@ -109,6 +152,7 @@ async def register_user(
                 "theme": theme,
                 "current_theme": current_theme,
                 "error": "Passwords do not match",
+                "captcha_challenge": new_captcha_challenge,
             },
         )
         set_theme_cookie(response, current_theme)
@@ -117,6 +161,9 @@ async def register_user(
     # Check if user already exists
     existing_user = db.query(models.User).filter(models.User.email == email).first()
     if existing_user:
+        # Store the new captcha answer for the next attempt
+        request.session["captcha_answer"] = new_captcha_answer
+        
         response = templates.TemplateResponse(
             "register.html",
             {
@@ -124,6 +171,7 @@ async def register_user(
                 "theme": theme,
                 "current_theme": current_theme,
                 "error": "Email already registered",
+                "captcha_challenge": new_captcha_challenge,
             },
         )
         set_theme_cookie(response, current_theme)
@@ -142,6 +190,10 @@ async def register_user(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Clear the captcha from session
+    if "captcha_answer" in request.session:
+        del request.session["captcha_answer"]
 
     # Create success response with toast notification
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)

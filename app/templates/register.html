@@ -22,7 +22,7 @@
                     </span>
                     <input type="email" id="email" name="email" required
                         class="w-full pl-10 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
-                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }}; focus:ring-color: {{ theme.accent }};"
+                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }};"
                         placeholder="your.email@example.com">
                 </div>
                 <p class="mt-1 text-xs hidden" id="emailError" style="color: {{ theme.error }};">
@@ -38,7 +38,7 @@
                     </span>
                     <input type="password" id="password" name="password" required minlength="8"
                         class="w-full pl-10 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
-                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }}; focus:ring-color: {{ theme.accent }};">
+                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }};">
                     <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 flex items-center pr-3" style="color: {{ theme.fg1 }};">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -59,11 +59,32 @@
                     </span>
                     <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
                         class="w-full pl-10 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
-                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }}; focus:ring-color: {{ theme.accent }};">
+                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }};">
                 </div>
                 <p class="mt-1 text-xs hidden" id="passwordMatchError" style="color: {{ theme.error }};">
                     Passwords do not match
                 </p>
+            </div>
+            
+            <div>
+                <label for="captcha" class="block mb-1 text-sm font-medium" style="color: {{ theme.fg }};">Security Check</label>
+                <div class="mb-2 p-3 rounded-md" style="background-color: {{ theme.bg2 }};">
+                    <p style="color: {{ theme.accent }}; font-weight: bold; letter-spacing: 2px;">{{ captcha_challenge }}</p>
+                </div>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3" style="color: {{ theme.fg1 }};">
+                        <i class="fas fa-shield-alt"></i>
+                    </span>
+                    <input type="text" id="captcha" name="captcha" required
+                        class="w-full pl-10 px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                        style="background-color: {{ theme.bg2 }}; color: {{ theme.fg }}; border-color: {{ theme.bg2 }};"
+                        placeholder="Enter the characters above">
+                </div>
+                {% if captcha_error %}
+                <p class="mt-1 text-xs" style="color: {{ theme.error }};">
+                    {{ captcha_error }}
+                </p>
+                {% endif %}
             </div>
             
             <div>

@@ -1,50 +1,169 @@
 from fastapi import status
 
 
-def test_register_user(client, db):
+def test_register_user(client, db, monkeypatch):
     """Test user registration."""
+    # Mock the session to store and retrieve the captcha answer
+    test_captcha = "ABC123"
+    session_data = {"captcha_answer": test_captcha}
+    
+    # Create a mock session that returns our test data
+    class MockSession(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.update(session_data)
+        
+        def get(self, key, default=None):
+            return self[key] if key in self else default
+    
+    # Patch the request.session access
+    def mock_session_getter(request):
+        if not hasattr(request, "_session"):
+            request._session = MockSession()
+        return request._session
+    
+    monkeypatch.setattr("starlette.requests.Request.session", property(mock_session_getter))
+    
+    # Get the register page first to set up the session
+    client.get("/register")
+    
+    # Now submit the form with the correct captcha
     response = client.post(
         "/register",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={
-            "email": "newuser@example.com",
-            "password": "testpass123",
-            "confirm_password": "testpass123",
+        files={
+            "email": (None, "newuser@example.com"),
+            "password": (None, "testpass123"),
+            "confirm_password": (None, "testpass123"),
+            "captcha": (None, test_captcha),
         },
     )
+    
     assert response.status_code == status.HTTP_303_SEE_OTHER
     assert response.headers["location"] == "/login"
     assert "HX-Trigger" in response.headers  # Check for toast notification
 
 
-def test_register_user_password_mismatch(client, db):
+def test_register_user_password_mismatch(client, db, monkeypatch):
     """Test registration with mismatched passwords."""
+    # Mock the session to store and retrieve the captcha answer
+    test_captcha = "ABC123"
+    session_data = {"captcha_answer": test_captcha}
+    
+    # Create a mock session that returns our test data
+    class MockSession(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.update(session_data)
+        
+        def get(self, key, default=None):
+            return self[key] if key in self else default
+    
+    # Patch the request.session access
+    def mock_session_getter(request):
+        if not hasattr(request, "_session"):
+            request._session = MockSession()
+        return request._session
+    
+    monkeypatch.setattr("starlette.requests.Request.session", property(mock_session_getter))
+    
+    # Get the register page first to set up the session
+    client.get("/register")
+    
+    # Now submit the form with mismatched passwords
     response = client.post(
         "/register",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={
-            "email": "newuser@example.com",
-            "password": "testpass123",
-            "confirm_password": "wrongpass",
+        files={
+            "email": (None, "newuser@example.com"),
+            "password": (None, "testpass123"),
+            "confirm_password": (None, "wrongpass"),
+            "captcha": (None, test_captcha),
         },
     )
+    
     assert response.status_code == status.HTTP_200_OK
     assert "Passwords do not match" in response.text
 
 
-def test_register_existing_user(client, regular_user):
+def test_register_existing_user(client, regular_user, monkeypatch):
     """Test registration with existing email."""
+    # Mock the session to store and retrieve the captcha answer
+    test_captcha = "ABC123"
+    session_data = {"captcha_answer": test_captcha}
+    
+    # Create a mock session that returns our test data
+    class MockSession(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.update(session_data)
+        
+        def get(self, key, default=None):
+            return self[key] if key in self else default
+    
+    # Patch the request.session access
+    def mock_session_getter(request):
+        if not hasattr(request, "_session"):
+            request._session = MockSession()
+        return request._session
+    
+    monkeypatch.setattr("starlette.requests.Request.session", property(mock_session_getter))
+    
+    # Get the register page first to set up the session
+    client.get("/register")
+    
+    # Now submit the form with an existing email
     response = client.post(
         "/register",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={
-            "email": regular_user.email,
-            "password": "testpass123",
-            "confirm_password": "testpass123",
+        files={
+            "email": (None, regular_user.email),
+            "password": (None, "testpass123"),
+            "confirm_password": (None, "testpass123"),
+            "captcha": (None, test_captcha),
         },
     )
+    
     assert response.status_code == status.HTTP_200_OK
     assert "Email already registered" in response.text
+
+
+def test_invalid_captcha(client, db, monkeypatch):
+    """Test registration with invalid captcha."""
+    # Mock the session to store and retrieve the captcha answer
+    correct_captcha = "ABC123"
+    session_data = {"captcha_answer": correct_captcha}
+    
+    # Create a mock session that returns our test data
+    class MockSession(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.update(session_data)
+        
+        def get(self, key, default=None):
+            return self[key] if key in self else default
+    
+    # Patch the request.session access
+    def mock_session_getter(request):
+        if not hasattr(request, "_session"):
+            request._session = MockSession()
+        return request._session
+    
+    monkeypatch.setattr("starlette.requests.Request.session", property(mock_session_getter))
+    
+    # Get the register page first to set up the session
+    client.get("/register")
+    
+    # Submit the form with an incorrect captcha
+    response = client.post(
+        "/register",
+        files={
+            "email": (None, "newuser@example.com"),
+            "password": (None, "testpass123"),
+            "confirm_password": (None, "testpass123"),
+            "captcha": (None, "WRONG"),  # Wrong captcha
+        },
+    )
+    
+    assert response.status_code == status.HTTP_200_OK
+    assert "Invalid security code" in response.text
 
 
 def test_login_success(client, regular_user, test_password):
