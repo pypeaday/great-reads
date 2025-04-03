@@ -82,19 +82,25 @@ def test_update_book_status(client, test_book, user_headers, db):
     # Use the BookStatus enum directly
     reading_status = BookStatus.READING
     
-    data = {
-        "update_type": "status",
-        "status": "READING"
+    # For form data, we should use the files parameter with (None, value) format
+    # based on the memories about FastAPI form handling in tests
+    files = {
+        "update_type": (None, "status"),
+        "status": (None, "READING")
     }
     
     response = client.post(
         f"/books/{test_book.id}/inline-update", 
-        data=data,
+        files=files,
         headers=user_headers
     )
     
     assert response.status_code == 200
-    assert "Reading" in response.text
+    
+    # The book_card.html template doesn't display the status text
+    # Instead, it uses a color indicator for the status
+    # For READING status, it uses bg-yellow-400
+    assert "bg-yellow-400" in response.text
     
     # Verify the HX-Trigger header for closing modal
     assert "HX-Trigger" in response.headers
