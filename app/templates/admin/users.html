@@ -26,6 +26,7 @@
                         <th class="py-2 px-4 text-left text-theme-fg1">Name</th>
                         <th class="py-2 px-4 text-left text-theme-fg1">Role</th>
                         <th class="py-2 px-4 text-left text-theme-fg1">Status</th>
+                        <th class="py-2 px-4 text-left text-theme-fg1">Verified</th>
                         <th class="py-2 px-4 text-left text-theme-fg1">Last Login</th>
                         <th class="py-2 px-4 text-left text-theme-fg1">Created</th>
                         <th class="py-2 px-4 text-left text-theme-fg1">Actions</th>
@@ -49,6 +50,13 @@
                                 {% if user.is_active %}bg-theme-success text-white
                                 {% else %}bg-theme-error text-white{% endif %}">
                                 {{ 'Active' if user.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="py-2 px-4">
+                            <span class="px-2 py-1 rounded text-xs font-medium
+                                {% if user.is_email_verified %}bg-theme-success text-white
+                                {% else %}bg-theme-fg2 text-white{% endif %}">
+                                {{ 'Verified' if user.is_email_verified else 'Not Verified' }}
                             </span>
                         </td>
                         <td class="py-2 px-4">{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
@@ -84,6 +92,17 @@
                                 >
                                     <i class="fas {% if user.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}"
                                        title="{{ 'Deactivate' if user.is_active else 'Activate' }}"></i>
+                                </button>
+                                <button
+                                    class="px-3 py-1 text-sm rounded {% if user.is_email_verified %}bg-theme-fg2{% else %}bg-theme-success{% endif %} text-white hover:opacity-90 transition"
+                                    hx-post="/admin/users/{{ user.id }}/toggle-verification"
+                                    hx-swap="none"
+                                    hx-trigger="click"
+                                    hx-indicator="#indicator-{{ user.id }}"
+                                    onclick="setTimeout(() => { window.location.reload(); }, 300);"
+                                >
+                                    <i class="fas {% if user.is_email_verified %}fa-times-circle{% else %}fa-check-circle{% endif %}"
+                                       title="{{ 'Remove Verification' if user.is_email_verified else 'Verify Email' }}"></i>
                                 </button>
                                 <button
                                     class="px-3 py-1 text-sm rounded bg-theme-accent text-white hover:opacity-90 transition"
