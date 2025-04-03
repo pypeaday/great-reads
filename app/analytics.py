@@ -89,18 +89,22 @@ def get_reading_stats(db: Session, user_id: int) -> dict:
         .scalar() or 0
     )
 
-    # Calculate average rating for completed books
-    avg_rating_result = (
-        db.query(func.avg(models.Book.rating))
-        .filter(
-            models.Book.user_id == user_id,
-            models.Book.status == models.BookStatus.COMPLETED,
-            models.Book.rating.is_not(None),
+    # Get counts of books for each star rating (0-3)
+    rating_counts = {}
+    for rating in range(4):  # 0, 1, 2, 3
+        count = (
+            db.query(func.count(models.Book.id))
+            .filter(
+                models.Book.user_id == user_id,
+                models.Book.status == models.BookStatus.COMPLETED,
+                models.Book.rating == rating,
+            )
+            .scalar() or 0
         )
-        .scalar()
-    )
+        rating_counts[f"rating_{rating}_count"] = count
 
-    avg_rating = round(float(avg_rating_result), 1) if avg_rating_result else 0
+    # Calculate total rated books for percentage calculations
+    total_rated_books = sum(rating_counts.values())
 
     return {
         "books_last_month": len(books_last_month),
@@ -112,7 +116,11 @@ def get_reading_stats(db: Session, user_id: int) -> dict:
         "total_to_read": total_to_read,
         "total_on_hold": total_on_hold,
         "total_dnf": total_dnf,
-        "avg_rating": avg_rating,
+        "rating_0_count": rating_counts["rating_0_count"],
+        "rating_1_count": rating_counts["rating_1_count"],
+        "rating_2_count": rating_counts["rating_2_count"],
+        "rating_3_count": rating_counts["rating_3_count"],
+        "total_rated_books": total_rated_books
     }
 
 
@@ -168,9 +176,9 @@ def get_monthly_reading_data(db: Session, user_id: int) -> list[dict]:
 
 def get_books_timeline(db: Session, user_id: int, limit: int = 50) -> list[dict]:
     """Get a timeline of all books for a user, sorted by relevant dates.
-    
-    Returns books with their status and relevant dates (completion date for completed books,
-    start date for reading books, and created date for others).
+
+    Returns books with their status and relevant dates (completion date for completed
+    books, start date for reading books, and created date for others).
     """
     # Get all books for the user
     books = (
@@ -202,7 +210,7 @@ def get_books_timeline(db: Session, user_id: int, limit: int = 50) -> list[dict]
             date_label = "Added on"
         # Format the date for display
         formatted_date = relevant_date.strftime("%b %d, %Y")
-        
+
         timeline_items.append({
             "id": book.id,
             "title": book.title,
@@ -213,5 +221,5 @@ def get_books_timeline(db: Session, user_id: int, limit: int = 50) -> list[dict]
             "date_label": date_label,
             "notes": book.notes
         })
-    
+
     return timeline_items
