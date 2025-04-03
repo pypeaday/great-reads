@@ -38,7 +38,14 @@ from .auth import get_optional_current_user_sync
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="greatReads")
+# Create the FastAPI app with custom docs URLs that we'll protect
+app = FastAPI(
+    title="greatReads",
+    # We'll protect these routes with our middleware
+    docs_url="/docs", 
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 templates = Jinja2Templates(directory="app/templates")
 
 # Store templates in app state for access in routes
@@ -112,6 +119,51 @@ async def cookie_to_authorization(request: Request, call_next):
     return response
 
 
+# Add middleware to check admin access for docs routes
+@app.middleware("http")
+async def protect_admin_routes(request: Request, call_next):
+    import logging
+    from fastapi.responses import JSONResponse
+    from starlette.status import HTTP_404_NOT_FOUND
+
+    logger = logging.getLogger(__name__)
+    
+    # Admin-only paths
+    admin_paths = [
+        "/docs", 
+        "/redoc", 
+        "/openapi.json",
+        "/docs/oauth2-redirect",  # Also protect the OAuth2 redirect endpoint
+        "/static/swagger-ui-bundle.js",
+        "/static/swagger-ui.css",
+        "/static/redoc.standalone.js"
+    ]
+    
+    # Check if the request path is for admin-only routes
+    path = request.url.path
+    if any(path.startswith(admin_path) for admin_path in admin_paths):
+        logger.info(f"Admin route access attempt: {path}")
+        
+        # Get database session
+        db = database.SessionLocal()
+        try:
+            # Get current user
+            current_user = await get_optional_current_user(request, db)
+            
+            # Check if user is admin
+            if not current_user or current_user.role != "admin":
+                logger.warning(f"Unauthorized access attempt to {path} by {current_user.email if current_user else 'anonymous'}")
+                # Return 404 to hide the existence of these routes
+                return JSONResponse(status_code=HTTP_404_NOT_FOUND, content={"detail": "Not Found"})
+            
+            logger.info(f"Admin access granted to {path} for {current_user.email}")
+        finally:
+            db.close()
+    
+    # Process the request normally
+    return await call_next(request)
+
+
 # Include auth routes
 app.include_router(auth_routes.router)
 
@@ -120,6 +172,9 @@ if ADMIN_ENABLED:
     app.include_router(admin_routes.router)
 
 app.include_router(book_routes.router)
+
+# We don't need to create custom routes since we're using FastAPI's built-in routes
+# and protecting them with middleware
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
