@@ -14,7 +14,7 @@ def test_book(db, regular_user):
     book = Book(
         title="Test Book",
         author="Test Author",
-        status_id=1,  # Assuming TO_READ is id 1
+        status=BookStatus.TO_READ,
         user_id=regular_user.id,
         notes="Test notes",
         rating=None
