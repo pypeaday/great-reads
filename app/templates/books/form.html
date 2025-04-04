@@ -243,6 +243,22 @@
         
         // Function to select a book and populate the form
         function selectBook(book) {
+            // Debug: Log the book object to see what fields are available
+            console.log('Selected book:', book);
+            console.log('Book keys:', Object.keys(book));
+            console.log('Page count fields:', {
+                number_of_pages: book.number_of_pages,
+                page_count: book.page_count,
+                number_of_pages_median: book.number_of_pages_median,
+                pagination: book.pagination
+            });
+            
+            // Check if details object exists and has page count
+            if (book.details) {
+                console.log('Book has details object with keys:', Object.keys(book.details));
+                console.log('Details page count:', book.details.number_of_pages);
+            }
+            
             titleInput.value = book.title;
             authorInput.value = book.author;
             
@@ -258,9 +274,42 @@
                 pubDateInput.value = book.first_publish_year;
             }
             
-            // Set page count
+            // Set page count - try all possible field names
+            let pageCountFound = false;
+            
             if (book.number_of_pages) {
                 pageCountInput.value = book.number_of_pages;
+                console.log('Using number_of_pages:', book.number_of_pages);
+                pageCountFound = true;
+            } else if (book.page_count) {
+                pageCountInput.value = book.page_count;
+                console.log('Using page_count:', book.page_count);
+                pageCountFound = true;
+            } else if (book.number_of_pages_median) {
+                pageCountInput.value = book.number_of_pages_median;
+                console.log('Using number_of_pages_median:', book.number_of_pages_median);
+                pageCountFound = true;
+            } else if (book.pagination) {
+                // Some APIs provide pagination instead
+                const pageMatch = book.pagination?.match(/\d+/);
+                if (pageMatch) {
+                    pageCountInput.value = pageMatch[0];
+                    console.log('Extracted from pagination:', pageMatch[0]);
+                    pageCountFound = true;
+                }
+            }
+            
+            // If we still don't have a page count, check if it's in the detailed book data
+            if (!pageCountFound && book.details && book.details.number_of_pages) {
+                pageCountInput.value = book.details.number_of_pages;
+                console.log('Using details.number_of_pages:', book.details.number_of_pages);
+                pageCountFound = true;
+            }
+            
+            // If still no page count, add a placeholder to prompt manual entry
+            if (!pageCountFound) {
+                pageCountInput.placeholder = "Page count not found - please enter manually";
+                console.log('No page count found, prompting for manual entry');
             }
             
             // Set genres from subjects (detailed API call should provide better subjects)
