@@ -87,6 +87,40 @@
                     {% endfor %}
                 </select>
             </div>
+            
+            <!-- Genres -->
+            <div class="mb-4">
+                <label for="genres" class="block text-fg font-medium mb-2">Genres</label>
+                <input type="text" 
+                       name="genres" 
+                       id="genres" 
+                       value="{{ book.genres|join(',') if book and book.genres else '' }}"
+                       placeholder="Fiction, Fantasy, Adventure"
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+                <p class="text-xs text-fg opacity-70 mt-1">Enter multiple genres separated by commas</p>
+            </div>
+            
+            <!-- Publication Date -->
+            <div class="mb-4">
+                <label for="publication_date" class="block text-fg font-medium mb-2">Publication Date</label>
+                <input type="text" 
+                       name="publication_date" 
+                       id="publication_date" 
+                       value="{{ book.publication_date if book and book.publication_date else '' }}"
+                       placeholder="e.g. 2023 or June 2023"
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+            </div>
+            
+            <!-- Page Count -->
+            <div class="mb-4">
+                <label for="page_count" class="block text-fg font-medium mb-2">Number of Pages</label>
+                <input type="number" 
+                       name="page_count" 
+                       id="page_count" 
+                       value="{{ book.page_count if book and book.page_count else '' }}"
+                       min="1"
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent">
+            </div>
 
             <!-- Notes -->
             <div class="mb-6">
@@ -140,7 +174,7 @@
             // Set a timeout to prevent too many requests
             searchTimeout = setTimeout(async function() {
                 try {
-                    const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
+                    const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}&fetch_details=true`);
                     
                     if (!response.ok) {
                         throw new Error('Search request failed');
@@ -212,23 +246,38 @@
             titleInput.value = book.title;
             authorInput.value = book.author;
             
-            // Add book details to notes if available
-            let bookDetails = [];
+            // Populate the new fields
+            const genreInput = document.getElementById('genres');
+            const pubDateInput = document.getElementById('publication_date');
+            const pageCountInput = document.getElementById('page_count');
             
-            if (book.first_publish_year) {
-                bookDetails.push(`Published: ${book.first_publish_year}`);
+            // Set publication date (prefer publication_date from detailed info if available)
+            if (book.publication_date) {
+                pubDateInput.value = book.publication_date;
+            } else if (book.first_publish_year) {
+                pubDateInput.value = book.first_publish_year;
             }
             
+            // Set page count
             if (book.number_of_pages) {
-                bookDetails.push(`Pages: ${book.number_of_pages}`);
+                pageCountInput.value = book.number_of_pages;
             }
+            
+            // Set genres from subjects (detailed API call should provide better subjects)
+            if (book.subjects && book.subjects.length > 0) {
+                // Take up to 5 genres
+                genreInput.value = book.subjects.slice(0, 5).join(',');
+            }
+            
+            // Add remaining book details to notes if available
+            let bookDetails = [];
             
             if (book.publishers && book.publishers.length > 0) {
                 bookDetails.push(`Publisher: ${book.publishers[0]}`);
             }
             
-            if (book.subjects && book.subjects.length > 0) {
-                bookDetails.push(`Genres: ${book.subjects.slice(0, 5).join(', ')}`);
+            if (book.subjects && book.subjects.length > 5) {
+                bookDetails.push(`Additional Genres: ${book.subjects.slice(5, 10).join(', ')}`);
             }
             
             if (book.isbn) {

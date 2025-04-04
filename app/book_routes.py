@@ -132,6 +132,9 @@ async def create_book(
     status: str = Form(...),
     notes: str | None = Form(None),
     rating: str | None = Form(None),
+    genres: str | None = Form(None),  # Will be a comma-separated string of genres
+    publication_date: str | None = Form(None),
+    page_count: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
@@ -157,6 +160,15 @@ async def create_book(
                 status_code=400,
                 detail="Rating must be a valid integer between 0 and 3"
             ) from None
+    # Parse page count if provided
+    parsed_page_count = None
+    if page_count and page_count.strip():
+        try:
+            parsed_page_count = int(page_count)
+        except ValueError:
+            # If not a valid integer, just ignore it
+            pass
+            
     now = datetime.utcnow()
     book = models.Book(
         title=title,
@@ -169,6 +181,10 @@ async def create_book(
         updated_at=now,
         start_date=now if book_status == models.BookStatus.READING else None,
         completion_date=now if book_status == models.BookStatus.COMPLETED else None,
+        # New fields
+        genres=genres.split(',') if genres else [],
+        publication_date=publication_date,
+        page_count=parsed_page_count,
     )
     db.add(book)
     db.commit()
@@ -255,6 +271,9 @@ async def update_book(
     status: str = Form(...),
     notes: str | None = Form(None),
     rating: str | None = Form(None),
+    genres: str | None = Form(None),  # Will be a comma-separated string of genres
+    publication_date: str | None = Form(None),
+    page_count: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
@@ -305,12 +324,24 @@ async def update_book(
     ):
         book.completion_date = datetime.utcnow()
 
+    # Parse page count if provided
+    parsed_page_count = None
+    if page_count and page_count.strip():
+        try:
+            parsed_page_count = int(page_count)
+        except ValueError:
+            # If not a valid integer, just ignore it
+            pass
+
     # Update book
     book.title = title
     book.author = author
     book.status = new_status
     book.notes = notes
     book.rating = parsed_rating
+    book.genres = genres.split(',') if genres else []
+    book.publication_date = publication_date
+    book.page_count = parsed_page_count
     book.updated_at = datetime.utcnow()
     db.commit()
 
