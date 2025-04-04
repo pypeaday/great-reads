@@ -94,3 +94,8 @@ warn_unreachable = true
 [[tool.mypy.overrides]]
 module = ["passlib.*", "jose.*"]
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "ipython>=9.0.2",
+]

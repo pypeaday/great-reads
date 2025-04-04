@@ -1,14 +1,17 @@
 import enum
 import datetime
 
-from sqlalchemy import Boolean
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum as SQLEnum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    JSON,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -73,9 +76,20 @@ class Book(Base):
     start_date = Column(DateTime)
     completion_date = Column(DateTime)
     rating = Column(Integer)  # 0-3 rating system
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.now(datetime.UTC))
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.now(datetime.UTC), onupdate=datetime.datetime.now(datetime.UTC))
+    created_at = Column(
+        DateTime, nullable=False, default=datetime.datetime.now(datetime.UTC)
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.datetime.now(datetime.UTC),
+        onupdate=datetime.datetime.now(datetime.UTC),
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # New fields
+    genres = Column(JSON)  # Store multiple genres as a JSON array
+    publication_date = Column(String(20))  # Using string to handle various date formats
+    page_count = Column(Integer)
 
     # Relationships
     user = relationship("User", back_populates="books")
