@@ -24,6 +24,7 @@ from . import jinja_filters
 from . import models
 from . import roles
 from . import themes
+from .api import book_search
 
 # Conditional imports based on features
 try:
@@ -180,6 +181,9 @@ if ADMIN_ENABLED:
     app.include_router(admin_routes.router)
 
 app.include_router(book_routes.router)
+
+# Include API routers
+app.include_router(book_search.router)
 
 # We don't need to create custom routes since we're using FastAPI's built-in routes
 # and protecting them with middleware

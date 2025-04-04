@@ -6,6 +6,28 @@
         <h1 class="text-2xl font-bold mb-6">
             {% if is_new %}Add New Book{% else %}Edit Book{% endif %}
         </h1>
+        
+        {% if is_new %}
+        <!-- Book Search Section -->
+        <div class="mb-6 bg-bg1 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Search for a Book</h2>
+            <div class="mb-4">
+                <label for="book-search" class="block text-fg font-medium mb-2">Search by title, author, or ISBN</label>
+                <input type="text" 
+                       id="book-search" 
+                       class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent"
+                       placeholder="Start typing to search...">
+            </div>
+            
+            <!-- Search Results -->
+            <div id="search-results" class="mt-4 hidden">
+                <h3 class="text-lg font-medium mb-2">Results</h3>
+                <div id="results-container" class="max-h-60 overflow-y-auto bg-bg2 rounded p-2">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <form method="POST" 
               action="{% if is_new %}{{ url_for('create_book') }}{% else %}{{ url_for('update_book', book_id=book.id) }}{% endif %}"
@@ -89,4 +111,147 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if is_new %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('book-search');
+        const searchResults = document.getElementById('search-results');
+        const resultsContainer = document.getElementById('results-container');
+        const titleInput = document.getElementById('title');
+        const authorInput = document.getElementById('author');
+        
+        let searchTimeout;
+        
+        // Add event listener for search input
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 3) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+            
+            // Set a timeout to prevent too many requests
+            searchTimeout = setTimeout(async function() {
+                try {
+                    const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Search request failed');
+                    }
+                    
+                    const books = await response.json();
+                    
+                    // Display results
+                    displaySearchResults(books);
+                } catch (error) {
+                    console.error('Error searching books:', error);
+                }
+            }, 300); // 300ms debounce
+        });
+        
+        // Function to display search results
+        function displaySearchResults(books) {
+            resultsContainer.innerHTML = '';
+            
+            if (books.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-fg p-2">No books found</p>';
+                searchResults.classList.remove('hidden');
+                return;
+            }
+            
+            books.forEach(book => {
+                const bookElement = document.createElement('div');
+                bookElement.className = 'p-3 hover:bg-bg3 cursor-pointer rounded mb-3 flex items-start border border-bg3';
+                
+                // Create cover image if available
+                let coverHtml = '';
+                if (book.cover_url) {
+                    coverHtml = `<img src="${book.cover_url}" alt="${book.title} cover" class="w-16 h-auto mr-3 object-cover">`;
+                } else {
+                    coverHtml = `<div class="w-16 h-24 bg-bg2 flex items-center justify-center mr-3 text-xs text-center">No Cover</div>`;
+                }
+                
+                // Create book info
+                bookElement.innerHTML = `
+                    ${coverHtml}
+                    <div class="flex-1">
+                        <h4 class="font-medium">${book.title}</h4>
+                        <p class="text-sm">${book.author}</p>
+                        <div class="text-xs text-fg opacity-70 mt-1">
+                            <p>${book.first_publish_year || 'Unknown year'}</p>
+                            ${book.number_of_pages ? `<p>${book.number_of_pages} pages</p>` : ''}
+                            ${book.publishers && book.publishers.length > 0 ? 
+                              `<p>Publisher: ${book.publishers[0]}</p>` : ''}
+                            ${book.subjects && book.subjects.length > 0 ? 
+                              `<p>Genres: ${book.subjects.slice(0, 3).join(', ')}</p>` : ''}
+                            ${book.isbn ? `<p>ISBN: ${book.isbn}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to select this book
+                bookElement.addEventListener('click', function() {
+                    selectBook(book);
+                });
+                
+                resultsContainer.appendChild(bookElement);
+            });
+            
+            searchResults.classList.remove('hidden');
+        }
+        
+        // Function to select a book and populate the form
+        function selectBook(book) {
+            titleInput.value = book.title;
+            authorInput.value = book.author;
+            
+            // Add book details to notes if available
+            let bookDetails = [];
+            
+            if (book.first_publish_year) {
+                bookDetails.push(`Published: ${book.first_publish_year}`);
+            }
+            
+            if (book.number_of_pages) {
+                bookDetails.push(`Pages: ${book.number_of_pages}`);
+            }
+            
+            if (book.publishers && book.publishers.length > 0) {
+                bookDetails.push(`Publisher: ${book.publishers[0]}`);
+            }
+            
+            if (book.subjects && book.subjects.length > 0) {
+                bookDetails.push(`Genres: ${book.subjects.slice(0, 5).join(', ')}`);
+            }
+            
+            if (book.isbn) {
+                bookDetails.push(`ISBN: ${book.isbn}`);
+            }
+            
+            if (book.ol_url) {
+                bookDetails.push(`Open Library: ${book.ol_url}`);
+            }
+            
+            // Add details to notes field if we have any
+            if (bookDetails.length > 0) {
+                const notesField = document.getElementById('notes');
+                notesField.value = bookDetails.join('\n');
+            }
+            
+            // Hide search results
+            searchResults.classList.add('hidden');
+            
+            // Clear search input
+            searchInput.value = '';
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}
