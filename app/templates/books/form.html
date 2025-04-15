@@ -17,6 +17,7 @@
                        id="book-search" 
                        class="w-full bg-bg2 text-fg border border-bg2 rounded px-3 py-2 focus:outline-none focus:border-accent"
                        placeholder="Start typing to search...">
+                <div id="search-status" class="text-sm text-muted mt-2"></div>
             </div>
             
             <!-- Search Results -->
@@ -160,34 +161,58 @@
         let searchTimeout;
         
         // Add event listener for search input
-        searchInput.addEventListener('input', function() {
+        const searchStatus = document.getElementById('search-status');
+        searchInput.addEventListener('input', function(e) {
             const query = this.value.trim();
-            
             // Clear previous timeout
             clearTimeout(searchTimeout);
-            
             if (query.length < 3) {
                 searchResults.classList.add('hidden');
+                searchStatus.textContent = '';
                 return;
             }
-            
+            // Show debounce message
+            searchStatus.textContent = 'Searching will start when you stop typing or press Enter.';
             // Set a timeout to prevent too many requests
             searchTimeout = setTimeout(async function() {
+                searchStatus.textContent = 'Searching OpenLibrary... this may take up to a minute.';
                 try {
                     const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}&fetch_details=true`);
-                    
                     if (!response.ok) {
                         throw new Error('Search request failed');
                     }
-                    
                     const books = await response.json();
-                    
                     // Display results
                     displaySearchResults(books);
+                    searchStatus.textContent = '';
                 } catch (error) {
+                    searchStatus.textContent = 'Error searching books.';
                     console.error('Error searching books:', error);
                 }
             }, 200); // 200ms debounce
+        });
+        // Also trigger search on Enter
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                if (query.length < 3) return;
+                searchStatus.textContent = 'Searching OpenLibrary... this may take up to a minute.';
+                (async () => {
+                    try {
+                        const response = await fetch(`/api/books/search?q=${encodeURIComponent(query)}&fetch_details=true`);
+                        if (!response.ok) {
+                            throw new Error('Search request failed');
+                        }
+                        const books = await response.json();
+                        displaySearchResults(books);
+                        searchStatus.textContent = '';
+                    } catch (error) {
+                        searchStatus.textContent = 'Error searching books.';
+                        console.error('Error searching books:', error);
+                    }
+                })();
+            }
         });
         
         // Function to display search results
