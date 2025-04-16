@@ -20,17 +20,21 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Add only the missing verification_token_expires column
-    # The other columns (is_email_verified and verification_token) already exist
+    # Add missing columns if they do not exist
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [column['name'] for column in inspector.get_columns('users')]
     with op.batch_alter_table('users') as batch_op:
-        batch_op.add_column(sa.Column('verification_token_expires', sa.DateTime(), nullable=True))
-        
+        if 'is_email_verified' not in columns:
+            batch_op.add_column(sa.Column('is_email_verified', sa.Boolean(), nullable=True))
+        if 'verification_token' not in columns:
+            batch_op.add_column(sa.Column('verification_token', sa.String(255), nullable=True))
+        if 'verification_token_expires' not in columns:
+            batch_op.add_column(sa.Column('verification_token_expires', sa.DateTime(), nullable=True))
     # Create a unique index for verification_token if it doesn't exist
-    # We'll wrap this in a try/except to handle the case where it already exists
     try:
         op.create_index('ix_users_verification_token', 'users', ['verification_token'], unique=True)
     except Exception as e:
-        # Index may already exist, which is fine
         print(f"Note: {e}")
 
 

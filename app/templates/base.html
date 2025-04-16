@@ -216,10 +216,14 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
-                    <a href="/" class="text-2xl font-bold text-theme-fg hover:text-theme-accent transition-colors flex items-center">
-                        <img src="/static/img/favicon.png" alt="greatReads Logo" class="w-8 h-8 mr-3">
-                        <span style="font-family: 'Georgia', serif;">great<span class="text-theme-accent">Reads</span></span>
+                    <a href="/" class="text-theme-fg1 hover:text-theme-accent transition-colors text-xl px-2" aria-label="Dashboard" title="Dashboard / Home">
+                        <i class="fas fa-house"></i>
                     </a>
+                    {% if user %}
+                    <a href="/books" class="text-theme-fg1 hover:text-theme-accent transition-colors text-xl px-2" aria-label="My Library" title="My Library">
+                        <i class="fas fa-book"></i>
+                    </a>
+                    {% endif %}
                     <a href="https://github.com/pypeaday/great-reads" target="_blank" class="text-theme-fg1 hover:text-theme-accent transition-colors" title="View on GitHub">
                         <i class="fab fa-github"></i>
                     </a>
@@ -281,6 +285,97 @@
             toast.classList.add("show");
             setTimeout(() => toast.classList.remove("show"), 3000);
         });
+
+        // Intercept all form submissions for book updates (moved from index.html)
+        document.addEventListener('submit', function(event) {
+            const form = event.target;
+            const isBookUpdateForm = form.getAttribute('hx-post') && 
+                                     form.getAttribute('hx-post').includes('/inline-update');
+            
+            if (isBookUpdateForm) {
+                event.preventDefault(); // Prevent the default form submission
+                console.log('Intercepted book update form submission');
+                
+                // Get the form data
+                const formData = new FormData(form);
+                const url = form.getAttribute('hx-post');
+                const target = form.getAttribute('hx-target');
+                
+                // Log the form data for debugging
+                console.log('Form submission to:', url);
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                
+                // Send the form data using fetch with the correct content type
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        // Don't set Content-Type here - the browser will set it correctly with the boundary
+                        // for multipart/form-data when using FormData
+                    }
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Update the target element with the response HTML
+                    const targetElement = document.querySelector(target);
+                    if (targetElement) {
+                        targetElement.outerHTML = html;
+                        console.log('Updated target element with response HTML');
+                    }
+                    // Close the modal
+                    closeModal();
+                })
+                .catch(error => {
+                    console.error('Error submitting form:', error);
+                });
+            }
+        });
+
+        // Modal functions (shared for all pages)
+        function openModal(bookId) {
+            const modal = document.getElementById('book-modal');
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = '<div class="flex justify-center items-center h-40"><svg class="animate-spin h-8 w-8 text-theme-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            fetch(`/books/${bookId}/modal`)
+                .then(response => response.text())
+                .then(html => {
+                    modalContent.innerHTML = html;
+                    htmx.process(modalContent);
+                    const modalForms = modalContent.querySelectorAll('form:not([hx-post])');
+                    modalForms.forEach(form => {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            console.log('Prevented non-HTMX form submission inside modal');
+                        });
+                    });
+                })
+                .catch(error => {
+                    modalContent.innerHTML = `<div class="text-theme-error">Error loading book details: ${error.message}</div>`;
+                });
+        }
+        function closeModal(event) {
+            const modal = document.getElementById('book-modal');
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+        function logFormData(event) {
+            const form = event.target;
+            const formData = new FormData(form);
+            console.log('Form submission:', form.getAttribute('action') || form.getAttribute('hx-post'));
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+        }
     </script>
     
     {% block scripts %}{% endblock %}

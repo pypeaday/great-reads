@@ -1,6 +1,7 @@
 """Book management routes for the book tracking app."""
 
 from datetime import datetime
+from collections import defaultdict
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -32,6 +33,7 @@ def get_templates(request: Request):
 
 
 @router.get("/", response_class=HTMLResponse, response_model=None)
+
 async def list_books(
     request: Request,
     status_filter: str | None = None,
@@ -39,10 +41,11 @@ async def list_books(
     author_filter: str | None = None,
     notes_filter: str | None = None,
     rating_filter: str | None = None,
+    group_by: str | None = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    """List all books for the current user with optional filtering."""
+    """List all books for the current user with optional filtering and grouping."""
 
     query = db.query(models.Book)
 
@@ -80,19 +83,46 @@ async def list_books(
 
     books = query.order_by(desc(models.Book.created_at)).all()
 
+    # Group books as requested
+    group_by = group_by or request.query_params.get("group_by", "alphabetical")
+    grouped_books = None
+    group_options = [
+        ("author", "By Author"),
+        ("alphabetical", "Alphabetically (A-Z)"),
+    ]
+
+    if group_by == "author":
+        grouped_books = defaultdict(list)
+        for book in books:
+            grouped_books[book.author].append(book)
+        # Sort authors alphabetically
+        grouped_books = dict(sorted(grouped_books.items(), key=lambda x: x[0].lower()))
+    else:  # default and fallback to alphabetical
+        grouped_books = defaultdict(list)
+        for book in books:
+            first_letter = book.title[0].upper() if book.title else "#"
+            if not first_letter.isalpha():
+                first_letter = "#"
+            grouped_books[first_letter].append(book)
+        # Sort letters A-Z, then '#'
+        sorted_keys = sorted([k for k in grouped_books.keys() if k != "#"]) + (["#"] if "#" in grouped_books else [])
+        grouped_books = {k: grouped_books[k] for k in sorted_keys}
+
     templates = get_templates(request)
     return templates.TemplateResponse(
         "books/list.html",
         {
             "request": request,
-            "current_user": current_user,
-            "books": books,
+            "user": current_user,
+            "grouped_books": grouped_books,
+            "group_by": group_by,
+            "group_options": group_options,
+            "books": books,  # still pass flat list for possible use
             "status_filter": status_filter,
             "title_filter": title_filter,
             "author_filter": author_filter,
             "notes_filter": notes_filter,
             "rating_filter": rating_filter,
-            "statuses": list(models.BookStatus),
         },
     )
 
@@ -116,6 +146,7 @@ async def new_book_form(
         {
             "request": request,
             "current_user": current_user,
+            "user": current_user,
             "book": None,
             "statuses": list(models.BookStatus),
             "is_new": True,
@@ -254,6 +285,7 @@ async def edit_book_form(
         {
             "request": request,
             "current_user": current_user,
+            "user": current_user,
             "book": book,
             "statuses": list(models.BookStatus),
             "is_new": False,
@@ -397,14 +429,12 @@ async def inline_update_book(
     rating = form_data.get("rating")
     title = form_data.get("title")
     author = form_data.get("author")
+    page_count = form_data.get("page_count")
 
     # Debug logging
     print(f"Received form data: {dict(form_data)}")
     print(f"Update type: {update_type}")
 
-    # Validate required fields
-    if not update_type:
-        raise HTTPException(status_code=400, detail="Update type is required")
     # Get the book
     book = db.query(models.Book).filter(models.Book.id == book_id).first()
     if not book:
@@ -416,60 +446,119 @@ async def inline_update_book(
     ):
         raise HTTPException(status_code=403, detail="Not authorized to edit this book")
 
-    # Update based on the update type
-    if update_type == "notes" and notes is not None:
-        book.notes = notes
-    elif update_type == "status" and status is not None:
-        try:
-            new_status = models.BookStatus[status.upper()]
-
-            # Handle date updates based on status change
-            now = datetime.utcnow()
-
-            # If changing to READING and no start date, set it
-            if new_status == models.BookStatus.READING and not book.start_date:
-                book.start_date = now
-
-            # If changing to COMPLETED and no completion date, set it
-            if new_status == models.BookStatus.COMPLETED and not book.completion_date:
-                book.completion_date = now
-
-            book.status = new_status
-        except KeyError:
-            raise HTTPException(status_code=400, detail="Invalid status") from None
-    elif update_type == "rating":
-        # Handle rating
-        if rating == "null" or rating is None:
-            book.rating = None
-        else:
+    # Unified update: if update_type is missing, update all fields present
+    if not update_type:
+        # Title
+        if title is not None:
+            if not title.strip():
+                raise HTTPException(status_code=400, detail="Title cannot be empty")
+            book.title = title.strip()
+        # Author
+        if author is not None:
+            if not author.strip():
+                raise HTTPException(status_code=400, detail="Author cannot be empty")
+            book.author = author.strip()
+        # Status
+        if status is not None:
             try:
-                parsed_rating = int(rating)
-                if not 0 <= parsed_rating <= 3:
+                new_status = models.BookStatus[status.upper()]
+                now = datetime.utcnow()
+                if new_status == models.BookStatus.READING and not book.start_date:
+                    book.start_date = now
+                if new_status == models.BookStatus.COMPLETED and not book.completion_date:
+                    book.completion_date = now
+                book.status = new_status
+            except KeyError:
+                raise HTTPException(status_code=400, detail="Invalid status") from None
+        # Rating
+        if rating is not None:
+            if rating == "null" or rating == "":
+                book.rating = None
+            else:
+                try:
+                    parsed_rating = int(rating)
+                    if not 0 <= parsed_rating <= 3:
+                        raise HTTPException(
+                            status_code=400, detail="Rating must be between 0 and 3"
+                        )
+                    book.rating = parsed_rating
+                except ValueError:
                     raise HTTPException(
-                        status_code=400, detail="Rating must be between 0 and 3"
-                    )
-                book.rating = parsed_rating
-                # Print for debugging
-                print(f"Setting rating to {parsed_rating} for book {book.id}")
-            except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Rating must be a valid integer between 0 and 3"
-                ) from None
-    elif update_type == "title" and title is not None:
-        # Update title
-        if not title.strip():
-            raise HTTPException(status_code=400, detail="Title cannot be empty")
-        book.title = title.strip()
-    elif update_type == "author" and author is not None:
-        # Update author
-        if not author.strip():
-            raise HTTPException(status_code=400, detail="Author cannot be empty")
-        book.author = author.strip()
+                        status_code=400,
+                        detail="Rating must be a valid integer between 0 and 3"
+                    ) from None
+        # Notes
+        if notes is not None:
+            book.notes = notes
+        # Page Count
+        if page_count is not None:
+            if page_count == "":
+                book.page_count = None
+            else:
+                try:
+                    book.page_count = int(page_count)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Page count must be a valid integer")
     else:
-        raise HTTPException(
-            status_code=400, detail="Invalid update type or missing data"
-        )
+        # Legacy single-field update logic
+        if update_type == "notes" and notes is not None:
+            book.notes = notes
+        elif update_type == "status" and status is not None:
+            try:
+                new_status = models.BookStatus[status.upper()]
+
+                # Handle date updates based on status change
+                now = datetime.utcnow()
+
+                # If changing to READING and no start date, set it
+                if new_status == models.BookStatus.READING and not book.start_date:
+                    book.start_date = now
+
+                # If changing to COMPLETED and no completion date, set it
+                if new_status == models.BookStatus.COMPLETED and not book.completion_date:
+                    book.completion_date = now
+
+                book.status = new_status
+            except KeyError:
+                raise HTTPException(status_code=400, detail="Invalid status") from None
+        elif update_type == "rating":
+            # Handle rating
+            if rating == "null" or rating is None:
+                book.rating = None
+            else:
+                try:
+                    parsed_rating = int(rating)
+                    if not 0 <= parsed_rating <= 3:
+                        raise HTTPException(
+                            status_code=400, detail="Rating must be between 0 and 3"
+                        )
+                    book.rating = parsed_rating
+                    # Print for debugging
+                    print(f"Setting rating to {parsed_rating} for book {book.id}")
+                except ValueError:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Rating must be a valid integer between 0 and 3"
+                    ) from None
+        elif update_type == "title" and title is not None:
+            # Update title
+            if not title.strip():
+                raise HTTPException(status_code=400, detail="Title cannot be empty")
+            book.title = title.strip()
+        elif update_type == "author" and author is not None:
+            # Update author
+            if not author.strip():
+                raise HTTPException(status_code=400, detail="Author cannot be empty")
+            book.author = author.strip()
+        elif update_type == "page_count" and page_count is not None:
+            try:
+                book.page_count = int(page_count)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Page count must be a valid integer")
+        else:
+            raise HTTPException(
+                status_code=400, detail="Invalid update type or missing data"
+            )
 
     # Update the timestamp
     book.updated_at = datetime.utcnow()
@@ -507,8 +596,13 @@ async def inline_update_book(
         },
     )
 
-    # Add HX-Trigger header to close the modal
-    response.headers["HX-Trigger"] = '{"closeModal": true}'
+    # Check Referer to determine if we're on /books
+    referer = request.headers.get("referer", "")
+    if "/books" in referer and not referer.rstrip("/").endswith(f"/books/{book_id}"):
+        response.headers["HX-Redirect"] = "/books"
+    else:
+        # Add HX-Trigger header to close the modal
+        response.headers["HX-Trigger"] = '{"closeModal": true}'
     return response
 
 

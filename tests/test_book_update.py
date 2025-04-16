@@ -62,6 +62,91 @@ def test_update_book_author(client, test_book, user_headers):
         "update_type": "author",
         "author": "Updated Author"
     }
+    response = client.post(
+        f"/books/{test_book.id}/inline-update",
+        data=data,
+        headers=user_headers
+    )
+    assert response.status_code == 200
+    assert "Updated Author" in response.text
+    # Verify the HX-Trigger header for closing modal
+    assert "HX-Trigger" in response.headers
+    assert "closeModal" in response.headers["HX-Trigger"]
+
+def test_inline_update_all_fields(client, test_book, user_headers, db):
+    """Test updating all fields via the inline-update endpoint."""
+    data = {
+        "title": "New Title",
+        "author": "New Author",
+        "page_count": 123,
+        "status": "COMPLETED",
+        "rating": 2,
+        "notes": "Updated notes"
+    }
+    response = client.post(
+        f"/books/{test_book.id}/inline-update",
+        data=data,
+        headers=user_headers
+    )
+    assert response.status_code == 200
+    assert "New Title" in response.text
+    assert "New Author" in response.text
+    # Notes are not shown on the card, so do not assert for them in the HTML
+    # Status is not shown on the card, so do not assert for it in the HTML
+    # Check for modal close trigger
+    assert "HX-Trigger" in response.headers or "HX-Redirect" in response.headers
+    # Verify DB state
+    db.refresh(test_book)
+    assert test_book.title == "New Title"
+    assert test_book.author == "New Author"
+    assert test_book.page_count == 123
+    assert test_book.status.name == "COMPLETED"
+    assert test_book.rating == 2
+    assert test_book.notes == "Updated notes"
+
+def test_inline_update_hx_redirect(client, test_book, user_headers):
+    """Test HX-Redirect header is set when referer is /books."""
+    data = {"title": "Redirect Test"}
+    headers = user_headers.copy()
+    headers["Referer"] = "http://testserver/books"
+    response = client.post(
+        f"/books/{test_book.id}/inline-update",
+        data=data,
+        headers=headers
+    )
+    assert response.status_code == 200
+    assert "HX-Redirect" in response.headers
+    assert response.headers["HX-Redirect"] == "/books"
+
+def test_inline_update_hx_trigger(client, test_book, user_headers):
+    """Test HX-Trigger header is set for modal close when not from /books."""
+    data = {"title": "Trigger Test"}
+    headers = user_headers.copy()
+    headers["Referer"] = "http://testserver/"
+    response = client.post(
+        f"/books/{test_book.id}/inline-update",
+        data=data,
+        headers=headers
+    )
+    assert response.status_code == 200
+    assert "HX-Trigger" in response.headers
+    assert "closeModal" in response.headers["HX-Trigger"]
+
+def test_inline_update_invalid_data(client, test_book, user_headers):
+    """Test error handling for invalid data (empty title)."""
+    data = {"title": ""}
+    response = client.post(
+        f"/books/{test_book.id}/inline-update",
+        data=data,
+        headers=user_headers
+    )
+    assert response.status_code == 400 or "error" in response.text.lower()
+
+    """Test updating a book's author."""
+    data = {
+        "update_type": "author",
+        "author": "Updated Author"
+    }
     
     response = client.post(
         f"/books/{test_book.id}/inline-update", 

@@ -15,9 +15,9 @@
             {% endif %}
         </div>
         <div class="flex space-x-1">
-            {% if book.pages %}
+            {% if book.page_count %}
             <span class="text-xs text-theme-fg2 bg-theme-bg1/40 px-1.5 py-0.5 rounded">
-                {{ book.pages }} p
+                {{ book.page_count }} p
             </span>
             {% endif %}
             <button onclick="deleteBook('{{ book.id }}'); event.stopPropagation();" class="text-theme-fg2 hover:text-red-400 transition-all p-1 rounded" title="Delete Book">
